@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon twitter-backend/server.js",
     "start": "cross-env NODE_ENV=production node twitter-backend/server.js",
-    "build": "npm install && npm install --prefix ../twitter-frontend && npm run build --prefix twitter-frontend",
+    "build": "npm install && npm install --prefix ../twitter-frontend && npm run build --prefix twitter-frontend"
   },
   "private": true,
   "type": "module",
