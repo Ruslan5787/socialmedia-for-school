@@ -7,7 +7,7 @@ import {formatDistanceToNow} from "date-fns";
 export const Comment = ({likes, userName, userAvatar, comment, numberDaysHavePassed}) => {
     const [liked, setLiked] = useState(false);
 
-    console.log(numberDaysHavePassed);
+    console.log(userAvatar);
 
     return (
         <Flex p={"15px 0"}>
@@ -24,7 +24,7 @@ export const Comment = ({likes, userName, userAvatar, comment, numberDaysHavePas
                 <Actions liked={liked} setLiked={setLiked}/>
 
                 <Text mt={3} color={"gray.light"} fontSize={"sm"} fontWeight={"light"}>
-                    {likes + (liked ? 1 : 0)} likes
+                    {likes + (liked ? 1 : 0)} лайков
                 </Text>
             </Box>
             <Flex alignItems={"right"} ml={"auto"}>

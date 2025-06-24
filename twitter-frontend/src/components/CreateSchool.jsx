@@ -1,4 +1,4 @@
-import { FormControl, FormLabel } from "@chakra-ui/form-control";
+import { FormControl, FormLabel, FormErrorMessage } from "@chakra-ui/form-control";
 import { Button, CloseButton, Dialog, Input, Portal, Stack, useDialog } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useColorMode } from "./ui/color-mode.jsx";
@@ -19,9 +19,54 @@ export const CreateSchool = ({ setSchools }) => {
         inn: "",
     });
 
+    // Состояние для ошибок валидации
+    const [errors, setErrors] = useState({
+        title: "",
+        email: "",
+        inn: "",
+    });
+
+    // Функция валидации
+    const validateInputs = () => {
+        let isValid = true;
+        const newErrors = { title: "", email: "", inn: "" };
+
+        // Валидация названия
+        if (!inputs.title.trim()) {
+            newErrors.title = "Название обязательно для заполнения";
+            isValid = false;
+        } else if (inputs.title.length > MAX_CHAR) {
+            newErrors.title = `Название не должно превышать ${MAX_CHAR} символов`;
+            isValid = false;
+        }
+
+        // Валидация email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!inputs.email.trim()) {
+            newErrors.email = "Email обязателен для заполнения";
+            isValid = false;
+        } else if (!emailRegex.test(inputs.email)) {
+            newErrors.email = "Введите корректный email";
+            isValid = false;
+        }
+
+        // Валидация ИНН (для России: 10 или 12 цифр)
+        const innRegex = /^\d{10}(\d{2})?$/;
+        if (!inputs.inn.trim()) {
+            newErrors.inn = "ИНН обязателен для заполнения";
+            isValid = false;
+        } else if (!innRegex.test(inputs.inn)) {
+            newErrors.inn = "ИНН должен состоять из 10 или 12 цифр";
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
+    };
+
     const handleCreateSchool = async () => {
-        if (!inputs.title.trim() || !inputs.email.trim() || !inputs.inn.trim()) {
-            showToast("Ошибка", "Заполните все поля", "error");
+        if (!validateInputs()) {
+            showToast("Ошибка", "Проверьте правильность заполнения полей", "error");
             return;
         }
 
@@ -30,7 +75,7 @@ export const CreateSchool = ({ setSchools }) => {
             const res = await fetch("/api/schools/", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify(inputs),
             });
@@ -41,7 +86,7 @@ export const CreateSchool = ({ setSchools }) => {
                 return;
             }
 
-            console.log("Created school:", data); // Логирование ответа сервера
+            console.log("Created school:", data);
             setSchools((prevSchools) => [...prevSchools, data]);
             showToast("Успех", "Школа добавлена в систему", "success");
             setIsOpen(false);
@@ -50,6 +95,7 @@ export const CreateSchool = ({ setSchools }) => {
                 email: "",
                 inn: "",
             });
+            setErrors({ title: "", email: "", inn: "" });
         } catch (error) {
             showToast("Ошибка", error.message, "error");
             console.error("Create school error:", error);
@@ -83,7 +129,7 @@ export const CreateSchool = ({ setSchools }) => {
                         </Dialog.Header>
                         <Dialog.Body>
                             <Stack spacing={4}>
-                                <FormControl isRequired>
+                                <FormControl isRequired isInvalid={!!errors.title}>
                                     <FormLabel m={"0 0 10px 0"}>Название</FormLabel>
                                     <Input
                                         value={inputs.title}
@@ -95,9 +141,11 @@ export const CreateSchool = ({ setSchools }) => {
                                         h={"35px"}
                                         type="text"
                                         maxLength={MAX_CHAR}
+                                        onBlur={validateInputs} // Валидация при потере фокуса
                                     />
+                                    <FormErrorMessage>{errors.title}</FormErrorMessage>
                                 </FormControl>
-                                <FormControl isRequired>
+                                <FormControl isRequired isInvalid={!!errors.inn}>
                                     <FormLabel m={"0 0 10px 0"}>ИНН</FormLabel>
                                     <Input
                                         value={inputs.inn}
@@ -108,10 +156,12 @@ export const CreateSchool = ({ setSchools }) => {
                                         w={"100%"}
                                         h={"35px"}
                                         type="text"
-                                        maxLength={MAX_CHAR}
+                                        maxLength={12} // Ограничение длины ИНН
+                                        onBlur={validateInputs}
                                     />
+                                    <FormErrorMessage>{errors.inn}</FormErrorMessage>
                                 </FormControl>
-                                <FormControl isRequired>
+                                <FormControl isRequired isInvalid={!!errors.email}>
                                     <FormLabel m={"0 0 10px 0"}>Почта</FormLabel>
                                     <Input
                                         value={inputs.email}
@@ -123,7 +173,9 @@ export const CreateSchool = ({ setSchools }) => {
                                         h={"35px"}
                                         type="email"
                                         maxLength={MAX_CHAR}
+                                        onBlur={validateInputs}
                                     />
+                                    <FormErrorMessage>{errors.email}</FormErrorMessage>
                                 </FormControl>
                                 <Stack spacing={10} pt={2}>
                                     <Button
@@ -136,7 +188,7 @@ export const CreateSchool = ({ setSchools }) => {
                                             bg: "blue.500",
                                         }}
                                         isLoading={isLoading}
-                                        isDisabled={!inputs.title.trim() || !inputs.email.trim() || !inputs.inn.trim()}
+                                        isDisabled={!!errors.title || !!errors.email || !!errors.inn}
                                     >
                                         Зарегистрировать
                                     </Button>

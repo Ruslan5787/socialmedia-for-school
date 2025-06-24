@@ -1,5 +1,6 @@
 import Room from "../models/roomModel.js";
 import User from "../models/userModel.js";
+import Group from "../models/groupsModel.js";
 
 const getRoomAboutUserId = async (req, res) => {
     try {
@@ -21,29 +22,28 @@ const getRoomAboutUserId = async (req, res) => {
 
         return res.status(200).json(room);
     } catch (e) {
-        return res.status(500).send();
+        res.status(500).json({error: "Ошибка при получении чата"});
+        console.log("Error in getRoomAboutUserId:", e.message);
     }
 }
 
 const getRoom = async (req, res) => {
     try {
-        const userId = req.user._id;
         const {roomId} = req.params;
-
-        const room = await Room.findById(roomId);
-
+        const room = await Room.findById(roomId).populate({
+            path: "messages.senderBy", select: "username",
+        });
         if (!room) {
             return res.status(404).json({message: "Переписки с этим пользователем еще нет", data: null});
         }
-
         return res.status(200).json(room);
     } catch (e) {
-        return res.status(500).send();
+        res.status(500).json({error: "Ошибка при получении чата"});
+        console.error("Error in getRoom:", e.message);
     }
-}
+};
 
 const getUsersListForCorrespondence = async (req, res) => {
-    console.log("Entering getUsersListForCorrespondence, req.user:", req.user);
     try {
         if (!req.user) {
             console.error("req.user is undefined");
@@ -52,20 +52,33 @@ const getUsersListForCorrespondence = async (req, res) => {
 
         const userId = req.user._id;
 
-        // Находим все комнаты, где участвует текущий пользователь, с сортировкой по updatedAt
+        // Находим все комнаты, где участвует текущий пользователь
         const rooms = await Room.find({
             users: userId.toString(),
         })
             .populate("lastMessage.sender")
-            .sort({updatedAt: -1}) // Сортировка по времени обновления
+            .sort({updatedAt: -1})
             .lean();
 
-        if (!rooms || rooms.length < 1) {
-            return res.status(404).json({error: "У вас нет переписок"});
-        }
-
-        // Извлекаем информацию о получателях
+        // Извлекаем информацию о получателях и группах
         const recipients = await Promise.all(rooms.map(async (room) => {
+            // Если это групповой чат (есть title), возвращаем информацию о группе
+            if (room.title) {
+                const group = await Group.findOne({chatId: room._id})
+                    .select("title")
+                    .lean();
+                if (group) {
+                    return {
+                        _id: room._id, username: group.title, profilePic: "", // Можно добавить аватар группы, если есть
+                        lastMessage: room.lastMessage ? {
+                            text: room.lastMessage.text || "",
+                            sender: room.lastMessage.sender?._id.toString() === userId.toString() ? "Вы" : room.lastMessage.sender?.username || "Unknown",
+                        } : null, isGroup: true, // Флаг для группового чата
+                    };
+                }
+            }
+
+            // Для личных чатов
             const recipientId = room.users.find((id) => id.toString() !== userId.toString());
             if (!recipientId) {
                 console.log("No recipientId found for room:", room._id);
@@ -88,6 +101,7 @@ const getUsersListForCorrespondence = async (req, res) => {
                     text: room.lastMessage.text || "",
                     sender: room.lastMessage.sender?._id.toString() === userId.toString() ? "Вы" : recipient.username || "Unknown",
                 } : null,
+                isGroup: false,
             };
         }));
 
@@ -95,10 +109,11 @@ const getUsersListForCorrespondence = async (req, res) => {
 
         return res.status(200).json(filteredRecipients);
     } catch (error) {
-        console.error("Error in getUsersListForCorrespondence:", error);
-        return res.status(500).json({error: "Ошибка сервера", details: error.message});
+        console.error("Error in getUsersListForCorrespondence:", error.message);
+        return res.status(500).json({error: "Ошибка при получении контактов пользователя"});
     }
 };
+
 const getUserChats = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -111,7 +126,8 @@ const getUserChats = async (req, res) => {
 
         res.status(200).json(rooms);
     } catch (err) {
-        res.status(500).json({error: "Ошибка сервера", details: err.message});
+        console.error("Error in getUserChats:", err.message);
+        res.status(500).json({error: "Ошибка при получении чатов пользователя"});
     }
 };
 
@@ -134,17 +150,13 @@ const createRoom = async (req, res) => {
             return res.status(200).json(existingRoom);
         }
 
-        // if (img) {
-        //     const uploadedResponse = await cloudinary.uploader.upload(img);
-        //     img = uploadedResponse.secure_url;
-        // }
-
         const newRoom = new Room({users: [recipientId, userId]});
         await newRoom.save();
 
         return res.status(201).json(newRoom);
     } catch (e) {
-        return res.status(500).send({error: e.message});
+        res.status(500).send({error: "Ошибка при создании чата"});
+        console.error("Error in createRoom:", e.message);
     }
 }
 
@@ -161,25 +173,24 @@ const sendMessage = async (req, res) => {
             return res.status(400).json({error: "Введите текст для сообщения"});
         }
 
-        if (text.length > 50) {
-            return res.status(400).json({error: "Сообщение не может превышать 50 символов"});
-        }
-
         const message = {
-            senderBy,
-            text,
-            img,
-            createdAt: new Date(),
-            seen: false,
+            senderBy, text, img, createdAt: new Date(), seen: false,
         };
 
         room.lastMessage = {sender: senderBy, text, createdAt: new Date()};
         room.messages.push(message);
         await room.save();
 
-        return res.status(200).json({...message, _id: room.messages[room.messages.length - 1]._id});
+        // Популяция senderBy для возвращаемого сообщения
+        const populatedMessage = await Room.findById(roomId)
+            .select("messages")
+            .slice("messages", -1)
+            .populate("messages.senderBy", "username");
+
+        return res.status(200).json(populatedMessage.messages[0]);
     } catch (e) {
-        return res.status(500).json({error: e.message});
+        console.error("Error in sendMessage:", e.message);
+        return res.status(500).json({error: "Ошибка при отправке письма"});
     }
 };
 
@@ -195,6 +206,7 @@ const getRoomMessages = async (req, res) => {
 
         return res.status(200).json(room.messages);
     } catch (e) {
+        console.error("Error in getRoomMessages:", e.message);
         return res.status(500).json({error: e.message});
     }
 }

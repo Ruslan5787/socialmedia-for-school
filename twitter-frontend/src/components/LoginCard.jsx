@@ -1,16 +1,13 @@
-import {FormControl, FormLabel} from "@chakra-ui/form-control";
-import {InputGroup, InputRightElement} from "@chakra-ui/input";
-import {FaEyeSlash} from "react-icons/fa";
-import {IoEyeSharp} from "react-icons/io5";
-
-import {Box, Button, Flex, Heading, Input, Link, Stack, Text,} from "@chakra-ui/react";
-import {useColorModeValue} from "./ui/color-mode.jsx";
-import {useState} from "react";
-import {useSetRecoilState} from "recoil";
+import { FormControl, FormLabel, FormErrorMessage } from "@chakra-ui/form-control";
+import { Box, Button, Flex, Heading, Input, Link, Stack, Text } from "@chakra-ui/react";
+import { useColorModeValue } from "./ui/color-mode.jsx";
+import { useState } from "react";
+import { useSetRecoilState } from "recoil";
 import authScreenAtom from "../atoms/authAtom.js";
 import userAtom from "../atoms/userAtom.js";
 import useShowToast from "../hooks/useShowToast.js";
-import {Toaster} from "./ui/toaster.jsx";
+import { Toaster } from "./ui/toaster.jsx";
+import { PasswordInput } from "./ui/password-input.jsx";
 
 export default function LoginCard() {
     const showToast = useShowToast();
@@ -18,14 +15,50 @@ export default function LoginCard() {
     const setAuthScreenState = useSetRecoilState(authScreenAtom);
     const [showPassword, setShowPassword] = useState(false);
     const [inputs, setInputs] = useState({
-        username: "Марина Сергеевна",
-        password: "d2$oln&lnOPe",
+        username: "",
+        password: "",
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState({
+        username: "",
+        password: "",
+    });
+
+    // Функция валидации
+    const validateInputs = () => {
+        let isValid = true;
+        const newErrors = { username: "", password: "" };
+
+        // Валидация логина
+        if (!inputs.username) {
+            newErrors.username = "Логин обязателен";
+            isValid = false;
+        } else if (inputs.username.length < 3) {
+            newErrors.username = "Логин должен содержать минимум 3 символа";
+            isValid = false;
+        }
+
+        // Валидация пароля
+        if (!inputs.password) {
+            newErrors.password = "Пароль обязателен";
+            isValid = false;
+        } else if (inputs.password.length < 8) {
+            newErrors.password = "Пароль должен содержать минимум 8 символов";
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
+    };
 
     const handleLogin = async () => {
+        if (!validateInputs()) {
+            showToast("Ошибка", "Пожалуйста, исправьте ошибки в форме", "error");
+            return;
+        }
+
         try {
-            setIsLoading(true)
+            setIsLoading(true);
             const res = await fetch("/api/users/login", {
                 method: "POST",
                 headers: {
@@ -37,12 +70,12 @@ export default function LoginCard() {
             const data = await res.json();
 
             if (data.error) {
-                showToast("Ошибка", data.error, "error")
+                showToast("Ошибка", data.error, "error");
                 throw Error(data.error);
             }
             localStorage.setItem("user-threads", JSON.stringify(data));
             setUser(data);
-            setIsLoading(false)
+            setIsLoading(false);
         } catch (error) {
             showToast("Ошибка", error.message, "error");
             setIsLoading(false);
@@ -51,31 +84,26 @@ export default function LoginCard() {
 
     return (
         <Flex
-            minH={"100vh"}
             align={"center"}
             justify={"center"}
             bg={useColorModeValue("gray.white", "gray.black")}
         >
-            <Toaster/>
-            <Stack spacing={8} mx={"auto"} maxW={"lg"} py={{base: 6, md: 12}} px={{base: "xl", md: "2xl"}}>
+            <Toaster />
+            <Stack spacing={8} mx={"auto"} maxW={"lg"} py={{ base: 6, md: 12 }} px={{ base: "xl", md: "2xl" }}>
                 <Stack align={"center"}>
-                    <Heading fontSize={{base: "2xl", md: "4xl"}} textAlign={"center"} m={"0 0 25px 0"}>
+                    <Heading fontSize={{ base: "2xl", md: "4xl" }} textAlign={"center"} m={"0 0 25px 0"}>
                         Вход в аккаунт
                     </Heading>
                 </Stack>
-
                 <Box
-                    w={{
-                        base: "full",
-                        sm: "400px",
-                    }}
+                    w={{ base: "full", sm: "400px" }}
                     rounded={"lg"}
                     bg={useColorModeValue("gray.white", "gray.dark")}
                     boxShadow={"lg"}
-                    p={{base: 4, md: 8}}
+                    p={{ base: 4, md: 8 }}
                 >
                     <Stack spacing={4}>
-                        <FormControl isRequired>
+                        <FormControl isRequired isInvalid={!!errors.username}>
                             <FormLabel m={"0 0 10px 0"}>Имя пользователя</FormLabel>
                             <Input
                                 value={inputs.username}
@@ -92,36 +120,20 @@ export default function LoginCard() {
                                 h={"35px"}
                                 type="text"
                             />
+                            <FormErrorMessage>{errors.username}</FormErrorMessage>
                         </FormControl>
-                        <FormControl m={"0 0 10px 0"} isRequired>
+                        <FormControl m={"0 0 10px 0"} isRequired isInvalid={!!errors.password}>
                             <FormLabel m={"0 0 10px 0"}>Пароль</FormLabel>
-                            <InputGroup>
-                                <Input
-                                    borderWidth={"1px"}
-                                    borderStyle={"solid"}
-                                    borderRadius={"5"}
-                                    w={"100%"}
-                                    h={"35px"}
-                                    value={inputs.password}
-                                    onChange={(e) =>
-                                        setInputs((inputs) => ({
-                                            ...inputs,
-                                            password: e.target.value,
-                                        }))
-                                    }
-                                    type={showPassword ? "text" : "password"}
-                                />
-                                <InputRightElement h={"full"}>
-                                    <Button
-                                        variant={"ghost"}
-                                        onClick={() =>
-                                            setShowPassword((showPassword) => !showPassword)
-                                        }
-                                    >
-                                        {showPassword ? <FaEyeSlash/> : <IoEyeSharp/>}
-                                    </Button>
-                                </InputRightElement>
-                            </InputGroup>
+                            <PasswordInput
+                                value={inputs.password}
+                                onChange={(e) =>
+                                    setInputs((inputs) => ({
+                                        ...inputs,
+                                        password: e.target.value,
+                                    }))
+                                }
+                            />
+                            <FormErrorMessage>{errors.password}</FormErrorMessage>
                         </FormControl>
                         <Stack spacing={10} pt={2}>
                             <Button
@@ -132,7 +144,7 @@ export default function LoginCard() {
                                     bg: useColorModeValue("gray.700", "gray.800"),
                                 }}
                                 onClick={handleLogin}
-                                loading={isLoading}
+                                isLoading={isLoading}
                                 loadingText={"Авторизация"}
                             >
                                 Войти

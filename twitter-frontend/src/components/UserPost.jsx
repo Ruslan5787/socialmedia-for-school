@@ -72,7 +72,7 @@ export const UserPost = ({postId, userAvatar, setPostsCount, postAuthor}) => {
     if (!post?.text) return null;
 
     return (
-        <Flex gap={3} mb={4} my={5} width={"full"}>
+        <Box display={{md: "flex", base: "block"}} gap={3} mb={4} my={5} width={"full"}>
             <Flex
                 display={{md: "flex", base: "none"}}
                 position="relative"
@@ -91,7 +91,7 @@ export const UserPost = ({postId, userAvatar, setPostsCount, postAuthor}) => {
             </Flex>
 
             <Box flex={1}>
-                <Flex justifyContent={"space-between"} flexDirection={{base: "column", sm: "row"}} w={"full"}>
+                <Flex justifyContent={"space-between"} w={"full"}>
                     <Link to={`/${authUser?.username}/post/${post?._id}`}>
                         <Flex mb={2} alignItems={"center"} textAlign={"center"}>
                             <Text fonWeight={"bold"} mr={2}>{postAuthor?.username}</Text>
@@ -105,7 +105,7 @@ export const UserPost = ({postId, userAvatar, setPostsCount, postAuthor}) => {
                         </Text>
                         <Menu.Root>
                             <Menu.Trigger asChild>
-                                <Button variant={"plain"} height={"23px"}>
+                                <Button variant={"plain"} height={"23px"} pr={0}>
                                     <BsThreeDots/>
                                 </Button>
                             </Menu.Trigger>
@@ -163,7 +163,7 @@ export const UserPost = ({postId, userAvatar, setPostsCount, postAuthor}) => {
                     </Text>
                 </Flex>
             </Box>
-        </Flex>
+        </Box>
     )
         ;
 };

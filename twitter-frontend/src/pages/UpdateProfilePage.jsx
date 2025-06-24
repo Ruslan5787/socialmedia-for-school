@@ -10,40 +10,62 @@ import userAtom from "../atoms/userAtom.js";
 import {useChangeUserAvatar} from "../hooks/useChangeUserAvatar.js";
 import useShowToast from "../hooks/useShowToast.js";
 import {Toaster} from "../components/ui/toaster.jsx";
-import {Link} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 
 const UpdateProfilePage = () => {
+    const navigate = useNavigate();
+    const showToaster = useShowToast();
+    const {userId} = useParams();
     const showToast = useShowToast();
-    const [user, setUser] = useRecoilState(userAtom);
+    const currentUser = useRecoilState(userAtom);
+    const [updatedUser, setUpdatedUser] = useState({});
     const [inputs, setInputs] = useState({
-        name: user.name,
-        username: user.username,
-        email: user.email,
+        name: "",
+        username: "",
+        email: "",
         password: "",
-        bio: user.bio,
+        bio: "",
     });
+    console.log(userId)
     const [userSourceImg, setUserSourceImg] = useState("../public/index.png");
     const {urlAvatar, handleImageChange} = useChangeUserAvatar();
     const fileRef = useRef(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
-        if (user.profilePic) {
-            setUserSourceImg(user.profilePic);
+        const fetchData = async () => {
+            try {
+                console.log(userId)
+                const resUser = await fetch(`/api/users/profile/${userId}`);
+                const dataUser = await resUser.json();
+                if (dataUser.error) {
+                    showToaster("Ошибка", dataUser.error, "error");
+                    return;
+                }
+
+                if (dataUser.profilePic) {
+                    setUserSourceImg(dataUser.profilePic);
+                }
+            } catch (e) {
+                showToast("error", e.message, "error");
+            }
         }
-    }, [user.profilePic])
+        fetchData()
+    }, [currentUser.profilePic])
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`/api/users/update/${user._id}`, {
+            const res = await fetch(`/api/users/update/${userId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({...inputs, profilePic: urlAvatar}),
             });
+
             setIsUpdating(true);
+
             const data = await res.json();
 
             if (data.error) {
@@ -52,8 +74,14 @@ const UpdateProfilePage = () => {
             }
 
             showToast("Уведомление", "Профиль обновлен успешно", "success");
-            setUser(data);
-            localStorage.setItem("user-threads", JSON.stringify(data))
+            setUpdatedUser(data);
+
+            console.log("user.id: ", currentUser._id, "userId: ", userId, "data._id", data._id);
+
+            if (currentUser._id === userId) {
+                localStorage.setItem("user-threads", JSON.stringify(data))
+            }
+
             setIsUpdating(false);
         } catch (error) {
             showToast("Error", error.message, "error");
@@ -63,7 +91,6 @@ const UpdateProfilePage = () => {
     return (
         <form onSubmit={handleSubmit}>
             <Flex
-                minH={"100vh"}
                 align={"center"}
                 justify={"center"}
                 bg={useColorModeValue("gray.white", "gray.black")}
@@ -77,8 +104,10 @@ const UpdateProfilePage = () => {
                     rounded={"xl"}
                     boxShadow={"lg"}
                     p={6}
-                    mt={{base: "0px",  md: "100px"}}
                 >
+                    <Button m={"0 auto 0 0"} onClick={() => navigate(-1)}>
+                        Назад
+                    </Button>
                     <Heading lineHeight={1.1} fontSize={{base: "xl", sm: "2xl"}}>
                         Редактирование данных пользователя
                     </Heading>
@@ -109,9 +138,9 @@ const UpdateProfilePage = () => {
                         </Stack>
                     </FormControl>
                     <FormControl m="10px 0 0 0" id="userName" isRequired>
-                        <FormLabel>Полное имя</FormLabel>
+                        <FormLabel>Логин</FormLabel>
                         <Input
-                            placeholder="Марина Абдулазимов"
+                            placeholder="Логин..."
                             value={inputs.name}
                             onChange={(e) => setInputs({...inputs, name: e.target.value})}
                             _placeholder={{color: "gray.500"}}
@@ -119,9 +148,9 @@ const UpdateProfilePage = () => {
                         />
                     </FormControl>
                     <FormControl m="10px 0 0 0" id="userName" isRequired>
-                        <FormLabel>Логин</FormLabel>
+                        <FormLabel>ФИО</FormLabel>
                         <Input
-                            placeholder={"мариналюбимка"}
+                            placeholder={"ФИО..."}
                             value={inputs.username}
                             onChange={(e) =>
                                 setInputs({...inputs, username: e.target.value})
@@ -135,7 +164,7 @@ const UpdateProfilePage = () => {
                         <Input
                             value={inputs.email}
                             onChange={(e) => setInputs({...inputs, email: e.target.value})}
-                            placeholder={"marina@gmail.com"}
+                            placeholder={"Почта"}
                             _placeholder={{color: "gray.500"}}
                             type="email"
                         />
@@ -145,7 +174,7 @@ const UpdateProfilePage = () => {
                         <Input
                             value={inputs.bio}
                             onChange={(e) => setInputs({...inputs, bio: e.target.value})}
-                            placeholder={inputs.bio === "" ? "О вас" : inputs.bio}
+                            placeholder={"О вас"}
                             _placeholder={{color: "gray.500"}}
                         />
                     </FormControl>
@@ -156,7 +185,7 @@ const UpdateProfilePage = () => {
                             onChange={(e) =>
                                 setInputs({...inputs, password: e.target.value})
                             }
-                            placeholder="пароль"
+                            placeholder="Пароль..."
                             _placeholder={{color: "gray.500"}}
                             type="password"
                         />
@@ -175,21 +204,19 @@ const UpdateProfilePage = () => {
                         >
                             Сохранить
                         </Button>
-                        <Link
-                            flex="1"
-                            to={"/"}
-                        >
-                            <Button
-                                flex={"1"}
-                                w={"full"}
-                                bg={"red.400"}
-                                color={"white"}
-                                _hover={{
-                                    bg: "red.500",
-                                }}>
-                                Отменить
-                            </Button>
-                        </Link>
+
+                        <Button
+                            p={"10px 0"}
+                            onClick={() => navigate(-1)}
+                            flex={"1"}
+                            w={"full"}
+                            bg={"red.400"}
+                            color={"white"}
+                            _hover={{
+                                bg: "red.500",
+                            }}>
+                            Отменить
+                        </Button>
                     </Stack>
                 </Stack>
             </Flex>

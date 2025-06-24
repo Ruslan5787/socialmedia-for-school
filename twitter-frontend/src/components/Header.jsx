@@ -26,8 +26,8 @@ const Header = () => {
 
     return (<Flex
         justifyContent={"space-between"}
-        mt={6}
-        mb={12}
+        pt={6}
+        pb={12}
         alignItems={"center"}
     >
         <Flex gap={4}>

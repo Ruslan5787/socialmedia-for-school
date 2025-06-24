@@ -12,6 +12,8 @@ const UserHeader = ({user}) => {
     const [isUpdating, setIsUpdating] = useState(false);
     const showToast = useShowToast();
     const currentUser = useRecoilValue(userAtom);
+    console.log(currentUser)
+
     const [isFollow, setFollow] = useState(
         user.followers?.includes(currentUser?._id)
     );
@@ -64,18 +66,18 @@ const UserHeader = ({user}) => {
 
     return (
         <VStack gap={4} alignItems={"start"} mb={5}>
-            <Flex justifyContent={"space-between"} w={"full"}>
+            <Flex justifyContent={"space-between"} w={"full"} flexDirection={{base: "column", md: "row"}}>
                 <Box>
-                    <Text fontSize={"2xl"} m="0 0 20px 0">
+                    <Text fontSize={"2xl"} m="0 0 10px 0">
                         {user.name}
                     </Text>
-                    <Flex gap={2} alignItems={"center"} margin="0 0 30px 0">
+                    <Flex gap={2} alignItems={"center"} margin="0 0 10px 0">
                         <Text fontSize={"sm"}>{user.username}</Text>
                     </Flex>
                     <Text mb={5} fontSize={"lg"} fontWeight={"normal"}>{user.bio}</Text>
 
                     {currentUser?._id === user._id && (
-                        <Link as={RouterLink} to="/update">
+                        <Link as={RouterLink} to={`/update/${currentUser._id}`}>
                             <Button size={"md"}>Обновить профиль</Button>
                         </Link>
                     )}
@@ -100,7 +102,7 @@ const UserHeader = ({user}) => {
                         )}
                     </Flex>
                 </Box>
-                <Box>
+                <Box order={{base: -1, md: 1}} mb={{base: "10px", md: 0}}>
                     {user.profilePic && (
                         <Avatar
                             size={"xs"}
@@ -128,6 +130,7 @@ const UserHeader = ({user}) => {
             <Flex justifyContent={"space-between"} w={"full"} mb={4}>
                 <Flex gap={2} alignItems={"center"}>
                     <Text color={"gray.light"}>{user.followers?.length} подписчиков</Text>
+                    <Text color={"gray.light"}>{user.following?.length} подписок</Text>
                 </Flex>
                 <Flex>
                     <Menu.Root>

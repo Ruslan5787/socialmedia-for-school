@@ -9,7 +9,7 @@ import {
     getGroupUsers,
     getSchool,
     getSchools,
-    createStudent
+    createStudent, addUsers
 } from "../controllers/schoolController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -24,5 +24,6 @@ router.get("/group_students/:id", protectRoute, getGroupUsers);
 router.delete("/users/:id", protectRoute, deleteUser); // Новый маршрут
 router.post("/student", protectRoute, createStudent); // Новый маршрут
 router.get("/group/:id", protectRoute, getGroup);
+router.post("/add_users", protectRoute, addUsers);
 
 export default router;

@@ -14,9 +14,7 @@ const createSchool = async (req, res) => {
             return res.status(400).json({error: "Школа уже существует в системе"});
         }
         const newSchool = new School({
-            title,
-            email,
-            inn,
+            title, email, inn,
         });
 
         newSchool.teachers.push(teacherId);
@@ -52,6 +50,7 @@ const getGroups = async (req, res) => {
 
         return res.status(200).json(groups || []);
     } catch (error) {
+        console.log("Error in getGroups: ", error.message);
         return res.status(500).json({error: "Ошибка сервера", details: error.message});
     }
 };
@@ -70,17 +69,13 @@ const createGroup = async (req, res) => {
 
         // Создаем новый чат для группы
         const newRoom = new Room({
-            title: `Чат группы ${title}`, // Название чата = название группы
-            users: [req.user._id], // Изначально только учитель в чате
+            title: `Чат группы ${title}`, users: [req.user._id], // Изначально добавляем только учителя
         });
         await newRoom.save();
 
         // Создаем новую группу
         const newGroup = new Group({
-            title,
-            teacherId: req.user._id,
-            schoolId,
-            users: [],
+            title, teacherId: req.user._id, schoolId, users: [], // Пустой массив пользователей, которые будут добавлены позже
             chatId: newRoom._id, // Связываем чат с группой
         });
         await newGroup.save();
@@ -90,7 +85,8 @@ const createGroup = async (req, res) => {
 
         res.status(201).json(newGroup);
     } catch (err) {
-        res.status(500).json({error: "Ошибка сервера", details: err.message});
+        console.log("Error in createGroup: ", err.message);
+        res.status(500).json({error: "Ошибка при создании группы"});
     }
 };
 
@@ -104,12 +100,10 @@ const getGroupUsers = async (req, res) => {
             return res.status(404).json({message: "Группа не найдена"});
         }
 
-        console.log(group.users)
-
         return res.status(200).json(group.users || []);
     } catch (error) {
         console.error("Error in getGroupUsers:", error.message);
-        return res.status(500).json({error: "Ошибка сервера", details: error.message});
+        return res.status(500).json({error: "Ошибка при получении участников группы"});
     }
 };
 
@@ -124,7 +118,8 @@ const getSchool = async (req, res) => {
 
         return res.status(200).json(school);
     } catch (error) {
-        return res.status(500).json({error: "Ошибка сервера", details: error.message});
+        console.log("Error in getSchool:", error.message)
+        return res.status(500).json({error: "Ошибка при получении данных сервера"});
     }
 };
 
@@ -136,7 +131,8 @@ const getSchools = async (req, res) => {
 
         return res.status(200).json(schools);
     } catch (error) {
-        return res.status(500).json({error: "Ошибка сервера", details: error.message});
+        console.log("Error in getSchools:", error.message);
+        return res.status(500).json({error: "Ошибка при получении школ"});
     }
 };
 
@@ -158,8 +154,7 @@ const deleteUser = async (req, res) => {
 
         // Проверяем, что учитель имеет доступ к группе, в которой состоит пользователь
         const group = await Group.findOne({
-            users: userId,
-            teacherId: teacherId.toString()
+            users: userId, teacherId: teacherId.toString()
         });
 
         if (!group) {
@@ -167,17 +162,15 @@ const deleteUser = async (req, res) => {
         }
 
         // Удаляем пользователя из группы
-        await Group.updateOne(
-            {_id: group._id},
-            {$pull: {users: userId}}
-        );
+        await Group.updateOne({_id: group._id}, {$pull: {users: userId}});
 
         // Удаляем пользователя
         await User.findByIdAndDelete(userId);
 
         return res.status(200).json({message: "Пользователь успешно удален"});
     } catch (error) {
-        return res.status(500).json({error: "Ошибка сервера", details: error.message});
+        console.log("Error in deleteUser:", error.message);
+        return res.status(500).json({error: "Ошибка при удалении пользователя"});
     }
 };
 
@@ -185,8 +178,8 @@ const createStudent = async (req, res) => {
     try {
         const {name, email, username, password, role, group} = req.body;
         const user = await User.findOne({$or: [{email}, {username}]});
-        const groupForUser = await Group.findById(group)
-        const chatGroup = await Room.findById(groupForUser.chatId._id)
+        const groupForUser = await Group.findById(group);
+
         if (user) {
             return res.status(400).json({error: "Такой пользователь уже существует"});
         }
@@ -199,41 +192,28 @@ const createStudent = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = new User({
-            name,
-            email,
-            username,
-            password: hashedPassword,
-            role,
-            groups: [group]
+            name, email, username, password: hashedPassword, role, groups: [group],
         });
-
         await newUser.save();
 
-        // if (updatedGroup.chatId) {
-        //     await Room.findByIdAndUpdate(
-        //         updatedGroup.chatId,
-        //         {$push: {users: newUser._id}},
-        //         {new: true}
-        //     );
-        // }
-
-        groupForUser.users.push(newUser)
-        chatGroup.users.push(newUser)
+        // Добавляем студента в группу
+        groupForUser.users.push(newUser._id);
         await groupForUser.save();
 
-        if (newUser) {
-            res.status(201).json({
-                _id: newUser._id,
-                name: newUser.name,
-                email: newUser.email,
-                username: newUser.username,
-                bio: newUser.bio,
-                profilePic: newUser.profilePic,
-                role: newUser.role,
-            });
-        } else {
-            res.status(400).json({error: "Неверные пользовательские данные"});
+        // Добавляем студента в чат группы
+        if (groupForUser.chatId) {
+            await Room.findByIdAndUpdate(groupForUser.chatId, {$push: {users: newUser._id}}, {new: true});
         }
+
+        res.status(201).json({
+            _id: newUser._id,
+            name: newUser.name,
+            email: newUser.email,
+            username: newUser.username,
+            bio: newUser.bio,
+            profilePic: newUser.profilePic,
+            role: newUser.role,
+        });
     } catch (err) {
         res.status(500).json({error: err.message});
         console.log("Error in createStudent: ", err.message);
@@ -248,9 +228,84 @@ const getGroup = async (req, res) => {
 
         return res.status(200).json(group || []);
     } catch (error) {
-        return res.status(500).json({error: "Ошибка сервера", details: error.message});
+        console.log("Error in getGroup:", error.message);
+        return res.status(500).json({error: "Ошибка при получении данных пользователя"});
     }
 };
+
+const addUsers = async (req, res) => {
+    try {
+        const users = req.body;
+
+        // Проверка, что данные являются массивом
+        if (!Array.isArray(users) || users.length === 0) {
+            return res.status(400).json({error: 'Ожидается непустой массив пользователей'});
+        }
+
+        const savedUsers = [];
+        const errors = [];
+
+        for (const user of users) {
+            const {name, username, email, password, groupId} = user;
+
+            // Валидация обязательных полей
+            if (!name || !username || !email || !groupId) {
+                errors.push(`Недостаточно данных для пользователя: ${username || 'без имени'}`);
+                continue;
+            }
+
+            // Проверка существования группы
+            const group = await Group.findById(groupId);
+            if (!group) {
+                errors.push(`Группа с ID ${groupId} не найдена для пользователя ${username}`);
+                continue;
+            }
+
+            // Проверка уникальности username и email
+            const existingUser = await User.findOne({$or: [{username}, {email}]});
+
+            if (existingUser) {
+                errors.push(`Пользователь с логином ${username} или почтой ${email} уже существует`);
+                continue;
+            }
+
+            // Хэширование пароля
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = password ? await bcrypt.hash(password, salt) : await bcrypt.hash(Math.random().toString(36).slice(-8), salt); // Случайный пароль, если не указан
+
+            // Создание нового пользователя
+            const newUser = new User({
+                name, username, email, password: hashedPassword, role: 'student', // Роль по умолчанию
+                groups: [groupId],
+            });
+
+            // Сохранение пользователя
+            await newUser.save();
+
+            // Обновление группы: добавляем userId в массив users
+            await Group.findByIdAndUpdate(groupId, {$addToSet: {users: newUser._id}});
+
+            // Сохраняем оригинальный пароль для ответа
+            savedUsers.push({
+                _id: newUser._id, name, username, email, password: password || Math.random().toString(36).slice(-8), // Возвращаем оригинальный или сгенерированный пароль
+                groupId,
+            });
+        }
+
+        // Формирование ответа
+        if (errors.length > 0 && savedUsers.length === 0) {
+            return res.status(400).json({error: 'Не удалось сохранить ни одного пользователя', details: errors});
+        }
+
+        return res.status(200).json({
+            message: `Успешно сохранено ${savedUsers.length} пользователей`, users: savedUsers, // Возвращаем пользователей с оригинальными паролями
+            errors: errors.length > 0 ? errors : undefined,
+        });
+    } catch (error) {
+        console.error('Ошибка при добавлении пользователей:', error);
+        return res.status(500).json({error: 'Ошибка сервера при сохранении пользователей'});
+    }
+}
 
 export {
     createSchool,
@@ -261,5 +316,6 @@ export {
     getGroups,
     getGroupUsers,
     createStudent,
-    deleteUser
+    deleteUser,
+    addUsers
 };

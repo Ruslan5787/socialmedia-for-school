@@ -11,12 +11,13 @@ import {UsersListForCorrespondence} from "../components/UsersListForCorresponden
 import {MdOutlineMessage} from "react-icons/md";
 import {IoCheckmarkDone, IoSend} from "react-icons/io5";
 import {FormControl} from "@chakra-ui/form-control";
-
+import {useColorMode} from "../components/ui/color-mode.jsx";
 
 const ChatPage = () => {
+    const {colorMode, toggleColorMode} = useColorMode();
     const showToaster = useShowToast();
     const mainUser = useRecoilValue(userAtom);
-    const {recipientId, } = useParams(); // Поддержка recipientId и room._id
+    const {recipientId, roomId} = useParams(); // Добавляем roomId
     const [messageValue, setMessageValue] = useState("");
     const [room, setRoom] = useState(null);
     const [recipient, setRecipient] = useState(null);
@@ -25,78 +26,74 @@ const ChatPage = () => {
 
     const fetchRoomAndMessages = async () => {
         try {
-            if (room._id) {
-                const resRoom = await fetch(`/api/rooms/room/${room._id}`);
+            if (roomId) {
+                // Для группового чата
+                const resRoom = await fetch(`/api/rooms/room/${roomId}`);
                 const dataRoom = await resRoom.json();
-
-                if (dataRoom.error || !dataRoom.users.includes(mainUser._id)) {
-                    // showToaster("Ошибка", dataRoom.error || "Вы не участник этой комнаты", "error");
+                if (dataRoom.error) {
+                    showToaster("Ошибка", dataRoom.error, "error");
                     return;
                 }
-
                 setRoom(dataRoom);
-                setRecipient({ username: dataRoom.title, profilePic: null });
                 setMessages(dataRoom.messages || []);
+                setRecipient({username: dataRoom.title || "Групповой чат", profilePic: ""});
             } else if (recipientId) {
+                // Для личного чата
                 if (recipientId === mainUser._id) {
-                    // showToaster("Ошибка", "Нельзя начать чат с самим собой", "error");
+                    showToaster("Ошибка", "Нельзя начать чат с самим собой", "error");
                     return;
                 }
 
                 const resUser = await fetch(`/api/users/profile/${recipientId}`);
                 const dataUser = await resUser.json();
-
                 if (dataUser.error) {
-                    // showToaster("Ошибка", dataUser.error, "error");
+                    showToaster("Ошибка", dataUser.error, "error");
                     return;
                 }
-
                 setRecipient(dataUser);
 
                 const resRoom = await fetch(`/api/rooms/${recipientId}`);
                 const dataRoom = await resRoom.json();
-
                 if (dataRoom.error) {
-                    // showToaster("Ошибка", dataRoom.error, "error");
+                    showToaster("Ошибка", dataRoom.error, "error");
                     return;
                 }
-                console.log("dataRoom: ", dataRoom)
 
-                if (dataRoom?.data !== null) {
+                if (dataRoom.data !== null) {
                     setRoom(dataRoom);
                     setMessages(dataRoom.messages || []);
                 } else {
-                    const resRoom = await fetch(`/api/rooms/createRoom`, {
+                    const resCreateRoom = await fetch(`/api/rooms/createRoom`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ recipientId }),
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({recipientId}),
                     });
-
-                    const newRoom = await resRoom.json();
-
+                    const newRoom = await resCreateRoom.json();
                     if (newRoom.error) {
-                        // showToaster("Ошибка", newRoom.error, "error");
+                        showToaster("Ошибка", newRoom.error, "error");
                         return;
                     }
-
                     setRoom(newRoom);
                     setMessages([]);
                 }
+            } else {
+                console.log("Ошибка", "ID получателя или чата не указан", "error");
             }
         } catch (error) {
-            // showToaster("Ошибка", error.message, "error");
+            console.error("fetchRoomAndMessages error:", error);
+            showToaster("Ошибка", "Не удалось загрузить чат", "error");
         }
     };
 
     const handleSendMessage = async () => {
         try {
             if (!messageValue.trim()) {
-                // showToaster("Ошибка", "Введите текст для сообщения", "error");
+                showToaster("Ошибка", "Введите текст для сообщения", "error");
                 return;
             }
 
-            if (!room) {
-                // showToaster("Ошибка", "Комната не создана", "error");
+            if (!room?._id) {
+                showToaster("Ошибка", "Комната не создана", "error");
                 return;
             }
 
@@ -109,24 +106,17 @@ const ChatPage = () => {
                 createdAt: new Date(),
             };
 
-            // Отправка через HTTP
             const resMessage = await fetch(`/api/rooms/sendMessage`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(newMessage),
+                method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(newMessage),
             });
 
             const dataMessage = await resMessage.json();
-
             if (dataMessage.error) {
-                // showToaster("Ошибка", dataMessage.error, "error");
+                showToaster("Ошибка", dataMessage.error, "error");
                 return;
             }
 
-            // Обновляем _id с сервера
             const updatedMessage = {...newMessage, _id: dataMessage._id || newMessage._id};
-
-            // Добавляем сообщение локально только если его еще нет
             setMessages((prev) => {
                 if (!prev.some((msg) => msg._id === updatedMessage._id)) {
                     return [...prev, updatedMessage];
@@ -137,30 +127,28 @@ const ChatPage = () => {
             socket.emit("send_message", updatedMessage);
             setMessageValue("");
         } catch (error) {
-            // showToaster("Ошибка", error.message, "error");
+            console.error("handleSendMessage error:", error);
+            showToaster("Ошибка", "Не удалось отправить сообщение", "error");
         }
     };
 
     useEffect(() => {
-        if (recipientId || room._id) {
-            fetchRoomAndMessages().then(() => {
-                console.log(recipientId, room?._id)
-                if (room?._id) {
-                    socket.emit("join_room", room._id);
-                    console.log(`Joined room ${room._id}`); // Для отладки
-                }
-            });
+        fetchRoomAndMessages();
+    }, [recipientId, roomId]);
+
+    useEffect(() => {
+        if (room?._id) {
+            socket.emit("join_room", room._id);
+            console.log(`Joined room ${room._id}`);
         }
 
-        console.log(recipientId, room?._id)
-        // Очистка при смене комнаты или размонтировании
         return () => {
             if (room?._id) {
-                socket.emit("leave_room", room._id); // Предполагается, что сервер поддерживает leave_room
+                socket.emit("leave_room", room._id);
                 console.log(`Left room ${room._id}`);
             }
         };
-    }, [recipientId, room?._id]);
+    }, [room?._id]);
 
     useEffect(() => {
         socket.on("connect", () => {
@@ -179,11 +167,10 @@ const ChatPage = () => {
 
     useEffect(() => {
         const handleMessageResponse = (message) => {
-            if (message.room._id === room?._id) {
+            if (message.roomId === room?._id) {
                 setMessages((prev) => {
-                    // Проверяем, нет ли сообщения с таким _id
                     if (!prev.some((msg) => msg._id === message._id)) {
-                        console.log("New message received:", message); // Для отладки
+                        console.log("New message received:", message);
                         return [...prev, message];
                     }
                     return prev;
@@ -208,69 +195,83 @@ const ChatPage = () => {
         return () => clearTimeout(timer);
     }, [messages]);
 
-    return (<Flex justifyContent={"space-between"} flexDirection={{base: "column", md: "row"}} w={"full"}>
-        <Toaster/>
-
-        <UsersListForCorrespondence/>
-
-        {!(recipientId || room._id) && (
-            <Flex mt={"80px"} flexDirection={"column"} justifyContent={"center"} alignItems="center" gap={2}>
-                <Text fontSize="20px">Можете кому-нибудь написать</Text>
-                <MdOutlineMessage size={70}/>
-            </Flex>)}
-
-        {(recipientId || room._id) && (<Flex
-            borderRadius={"10px"}
-            p={"20px 10px"}
-            flexDirection={"column"}
-            flex="1 0 0"
-            background={"gray.500"}
+    return (<Flex
+            justifyContent={"space-between"}
+            mb={{base: "15px", md: "0"}}
+            flexDirection={{base: "column", md: "row"}}
             w={"full"}
-            h={"full"}
         >
-            <Flex textAlign={"left"} alignItems={"center"}>
-                <Avatar.Root mr={3}>
-                    <Avatar.Fallback/>
-                    <Avatar.Image src={recipient?.profilePic}/>
-                </Avatar.Root>
-                <Text color={"base.dark"} fontWeight={"bold"}>
-                    {recipient?.username}
-                </Text>
-            </Flex>
-            <Separator m={"15px 0"}/>
-            <Flex h={"450px"} flexDirection={"column"}>
-                <Flex h={"full"} flex={"1 1 auto"} flexDirection={"column"} overflow={"auto"}>
-                    {messages.length > 0 && messages.map((message, index) => (<Box
-                        key={message._id}
-                        p={"10px 10px"}
-                        css={{scrollBehavior: "smooth"}}
-                        ref={index === messages.length - 1 ? lastMessageRef : null}
-                        alignSelf={mainUser?._id === message.senderBy ? "flex-end" : "flex-start"}
-                        mb={4}
-                        margin={mainUser?._id === message.senderBy ? "0 0 15px 50px" : "0 50px 15px 0"}
-                        background={mainUser?._id === message.senderBy ? "white" : "#ccc"}
-                    >
-                        {message.text}
-                        <IoCheckmarkDone size={15} color={message.seen ? "blue" : "black"}/>
-                    </Box>))}
-                </Flex>
+            <Toaster/>
 
-                <FormControl mb={2} alignContent={"flex-end"} onSubmit={() => console.log("e")}>
-                    <Flex>
-                        <Input
-                            value={messageValue}
-                            onChange={(event) => setMessageValue(event.target.value)}
-                            placeholder="Сообщение"
-                        />
-                        <Button onClick={handleSendMessage}>
-                            <IoSend/>
-                        </Button>
+            <Box>
+                <UsersListForCorrespondence/>
+            </Box>
+
+            {!(recipientId || roomId) && (
+                <Flex mt={"80px"} flexDirection={"column"} justifyContent={"center"} alignItems="center" gap={2}>
+                    <Text fontSize="20px" textAlign={"center"}>Можете кому-нибудь написать</Text>
+                    <MdOutlineMessage size={70}/>
+                </Flex>)}
+
+            {(recipientId || roomId) && room?._id && (<Flex
+                    borderRadius={"10px"}
+                    p={"15px 10px"}
+                    flexDirection={"column"}
+                    flex="1 0 0"
+                    background={"gray.500"}
+                    w={"full"}
+                    h={"full"}
+                >
+                    <Flex textAlign={"left"} alignItems={"center"}>
+                        <Avatar.Root mr={3}>
+                            <Avatar.Fallback/>
+                            <Avatar.Image src={recipient?.profilePic}/>
+                        </Avatar.Root>
+                        <Text color={"base.dark"} fontWeight={"bold"}>
+                            {recipient?.username}
+                        </Text>
                     </Flex>
-                </FormControl>
-            </Flex>
-        </Flex>)}
-    </Flex>);
+                    <Separator m={"15px 0"}/>
+                    <Flex h={"450px"} flexDirection={"column"}>
+                        <Flex pr={"10px"} h={"full"} flex={"1 1 auto"} flexDirection={"column"} overflow={"auto"}>
+                            {messages.length > 0 && messages.map((message, index) => (<Box
+                                    borderRadius={"10px"}
+                                    key={message._id}
+                                    p={"10px 10px"}
+                                    ref={index === messages.length - 1 ? lastMessageRef : null}
+                                    alignSelf={mainUser?._id === message.senderBy ? "flex-end" : "flex-start"}
+                                    mb={4}
+                                    margin={mainUser?._id === message.senderBy ? "0 0 15px 50px" : "0 50px 15px 0"}
+                                    background={mainUser?._id === message.senderBy ? colorMode === "dark" ? "black" : "white" : colorMode === "light" ? "white" : "black"}
+                                >
+                                    {message.text}
+                                    <IoCheckmarkDone size={15} color={message.seen ? "blue" : "black"}/>
+                                </Box>))}
+                        </Flex>
 
-}
+                        <FormControl mb={2} alignContent={"flex-end"} onSubmit={(e) => e.preventDefault()}>
+                            <Flex>
+                                <Input
+                                    value={messageValue}
+                                    border={"none"}
+                                    background={colorMode === "dark" ? "black" : "white"}
+                                    onChange={(event) => setMessageValue(event.target.value)}
+                                    placeholder="Введите сообщение..."
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                />
+                                <Button onClick={handleSendMessage}>
+                                    <IoSend/>
+                                </Button>
+                            </Flex>
+                        </FormControl>
+                    </Flex>
+                </Flex>)}
+        </Flex>);
+};
 
 export default ChatPage;

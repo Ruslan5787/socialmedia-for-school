@@ -8,9 +8,11 @@ const eventsSchema = new mongoose.Schema(
         },
         description: {
             type: String,
+            required: true,
         },
         Date: {
             type: Date,
+
             required: true,
         },
         Time: {

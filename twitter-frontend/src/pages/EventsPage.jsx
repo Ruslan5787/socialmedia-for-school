@@ -40,18 +40,18 @@ export const EventsPage = ({groupEvents, setGroupEvents, setActiveTab, activeTab
         } else {
             setGroupEvents([]);
         }
-    }, [activeTab, groups, showToast]);
+    }, [activeTab]);
 
     const handleTabChange = ({value}) => {
         setActiveTab(value);
     };
 
     return (
-        <Box>
+        <Box p={4}>
             {groups === null ? (
                 <Spinner/>
             ) : groups?.length > 0 ? (
-                <Flex minH="dvh">
+                <Flex minH="dvh" cursor={"pointer"}>
                     <Tabs.Root value={activeTab} onValueChange={handleTabChange} width="full">
                         <Tabs.List>
                             {groups.map((item) => (
@@ -93,7 +93,7 @@ export const EventsPage = ({groupEvents, setGroupEvents, setActiveTab, activeTab
                                             ))}
                                         </Box>
                                     ) : (
-                                        <Text>В этой группе пока нет мероприятий</Text>
+                                        <Text textAlign={"center"} mt={"20px"}>В этой группе пока нет мероприятий</Text>
                                     )}
                                 </Tabs.Content>
                             ))}

@@ -9,7 +9,6 @@ export const useChangeUserAvatar = () => {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
 
-        console.log(file)
         if (file && file.type.startsWith("image/")) {
             const reader = new FileReader();
 

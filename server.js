@@ -15,6 +15,7 @@ import roomsRoutes from "./twitter-backend/routes/roomsRoutes.js";
 import cors from "cors";
 import {startCronJobs} from "./twitter-backend/cron/cron.js";
 import connectDB from "./twitter-backend/db/connectDB.js";
+import {initStatuses} from "./twitter-backend/db/initStatus.js";
 
 dotenv.config();
 

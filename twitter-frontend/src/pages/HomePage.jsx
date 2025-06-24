@@ -2,14 +2,17 @@ import React, {useEffect, useState} from "react";
 import useShowToast from "../hooks/useShowToast.js";
 import {Post} from "../components/Post.jsx";
 import {Toaster} from "../components/ui/toaster.jsx";
-import {Box, Flex, Text} from "@chakra-ui/react";
+import {Box, Flex, Spinner, Text} from "@chakra-ui/react";
 
 const HomePage = () => {
     const [posts, setPosts] = useState([]);
     const showToast = useShowToast();
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         try {
+            setIsLoading(true)
+
             const getPosts = async () => {
                 const res = await fetch("/api/posts/feed");
                 const data = await res.json();
@@ -22,10 +25,18 @@ const HomePage = () => {
             };
 
             getPosts();
+            setIsLoading(false)
         } catch (error) {
             showToast("Ошибка", "Не удалось загрузить посты", "error");
+            setIsLoading(false);
         }
     }, [showToast]);
+
+    if (isLoading) {
+        return <Flex m={"20px 0 0 0"} justifyContent={"center"}>
+            <Spinner></Spinner>
+        </Flex>
+    }
 
     return (<Flex gap='10' alignItems={"flex-start"}>
         <Toaster/>

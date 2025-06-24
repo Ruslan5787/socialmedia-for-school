@@ -21,6 +21,7 @@ const CreatePost = ({setIsPostCreated}) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const dialog = useDialog({open: isOpen, setOpenChange: setIsOpen});
+    const {colorMode} = useColorMode();
 
     const handleTextChange = (e) => {
         const inputText = e.target.value;
@@ -55,6 +56,7 @@ const CreatePost = ({setIsPostCreated}) => {
             showToast("Уведомления", "Пост создан успешно", "success");
             setIsLoading(false);
             setIsPostCreated((prev) => prev + 1)
+            setUrlImage(null)
         } catch (error) {
             showToast("Ошибка", error.message, "error");
             setIsLoading(false);
@@ -69,10 +71,11 @@ const CreatePost = ({setIsPostCreated}) => {
                     onClick={() => setIsOpen(true)}
                     variant="outline"
                     size="xl"
+                    zIndex={"docked"}
                     position={"fixed"}
-                    bottom={10}
-                    right={10}
-                    bg={useColorMode("gray.300", "gray.dark")}
+                    bottom={{ base: 3, md: 10, }}
+                    right={{ base: 3, md: 10, }}
+                    bg={colorMode === "dark" ? "black" : "white"}
                     isLoading={isLoading}
                 >
                     <IoMdAddCircleOutline/> Создать пост

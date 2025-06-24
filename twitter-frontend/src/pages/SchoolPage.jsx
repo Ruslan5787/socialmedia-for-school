@@ -1,7 +1,7 @@
-import {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import useShowToast from "../hooks/useShowToast.js";
 import {useNavigate, useParams} from "react-router-dom";
-import {Box, Button, Flex, Tabs, Text} from "@chakra-ui/react";
+import {Box, Button, Flex, Spinner, Tabs, Text} from "@chakra-ui/react";
 import CreateGroup from "../components/CreateGroup.jsx";
 import {CreateEvents} from "./CreateEvents.jsx";
 import CreateUser from "../components/CreateUser.jsx";
@@ -19,10 +19,12 @@ export function SchoolPage() {
     const [groupEvents, setGroupEvents] = useState([]);
     const [selectedTab, setSelectedTab] = useState("students"); // Вкладка для переключения между учениками и мероприятиями
     const [activeTab, setActiveTab] = useState(null);
+    const [isLoading, setIsLoading] = useState(true)
 
     // Загрузка данных школы
     useEffect(() => {
         const fetchSchool = async () => {
+            setIsLoading(true)
             try {
                 const res = await fetch(`/api/schools/school/${id}`, {
                     headers: {"Cache-Control": "no-cache"},
@@ -34,6 +36,7 @@ export function SchoolPage() {
                     return;
                 }
                 setSchool(data);
+                setIsLoading(false)
             } catch (error) {
                 showToast("Ошибка", "Не удалось загрузить данные школы", "error");
                 navigate("/groups");
@@ -76,6 +79,12 @@ export function SchoolPage() {
         }
     }, [school, showToast, activeTab]);
 
+    if (isLoading) {
+        return <Flex m={"20px 0 0 0"} justifyContent={"center"}>
+            <Spinner></Spinner>
+        </Flex>
+    }
+
     return (
         <Box p={4}>
             <Flex gap={3} mb={4} align="center">
@@ -83,7 +92,7 @@ export function SchoolPage() {
                 <Text textStyle={"4xl"}>{school?.title || "Загрузка..."}</Text>
             </Flex>
 
-            <Flex gap={2} wrap={"wrap"}>
+            <Flex gap={2} direction={"column"}>
                 <CreateGroup schoolId={school?._id} setGroups={setGroups} setActiveTab={setActiveTab}/>
                 <CreateUser
                     groupUsers={groupUsers}

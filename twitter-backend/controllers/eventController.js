@@ -1,7 +1,7 @@
 import Event from "../models/eventModel.js";
 import Group from "../models/groupsModel.js";
-import Status from "../models/statusModel.js";
 import {sendNotificationAboutNewEventEmail} from "../utils/mailer.js";
+import Status from "../models/statusModel.js";
 
 const createEvent = async (req, res) => {
     try {
@@ -19,11 +19,9 @@ const createEvent = async (req, res) => {
             return res.status(403).json({error: "У вас нет прав для создания мероприятия в этой группе"});
         }
 
+        const statusDoc = await Status.findOne({name: status[0]})
+        console.log("status", status[0], "statusDoc", statusDoc)
         // Поиск ObjectId статуса
-        const statusDoc = await Status.findOne({name: status});
-        if (!statusDoc) {
-            return res.status(400).json({error: "Недопустимый статус"});
-        }
 
         // Создание мероприятия
         const newEvent = new Event({
@@ -52,7 +50,7 @@ const createEvent = async (req, res) => {
 
         res.status(201).json(newEvent);
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(500).json({error: "Ошибка при создании события"});
         console.log("Error in createEvent: ", err.message);
     }
 };
@@ -62,7 +60,12 @@ const getEvents = async (req, res) => {
         const {groupId} = req.params;
 
         // Проверка, что учитель связан с группой
-        const group = await Group.findById(groupId).populate('events');
+        const group = await Group.findById(groupId).populate({
+            path: 'events', // Сначала заполняем поле events
+            populate: {
+                path: 'status', // Затем заполняем поле status внутри каждого мероприятия
+            },
+        });
         if (!group) {
             return res.status(404).json({error: "Группа не найдена"});
         }
@@ -75,7 +78,6 @@ const getEvents = async (req, res) => {
 
 const getEvent = async (req, res) => {
     try {
-        console.log('EEEEEEEE')
         const eventId = req.params.eventId;
         const event = await Event.findById(eventId).populate("status"); // Популяция статуса, если нужно
         if (!event) {
@@ -106,7 +108,7 @@ const markEventAsViewed = async (req, res) => {
 
         res.status(200).json({message: 'Мероприятие отмечено как просмотренное'});
     } catch (error) {
-        res.status(500).json({error: error.message});
+        res.status(500).json({error: "Ошибка при просмотре мероприятия"});
         console.log('Ошибка в markEventAsViewed:', error.message);
     }
 };
@@ -120,7 +122,7 @@ const getEventGroup = async (req, res) => {
         }
         return res.status(200).json(group);
     } catch (error) {
-        res.status(500).json({error: "Ошибка сервера", details: error.message});
+        res.status(500).json({error: "Ошибка при подргрузке мероприятий группы"});
         console.error("Error in getEventGroup:", error.message);
     }
 };

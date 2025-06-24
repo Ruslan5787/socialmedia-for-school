@@ -1,10 +1,6 @@
-import {FormControl, FormLabel} from "@chakra-ui/form-control";
-import {InputGroup, InputRightElement,} from "@chakra-ui/input";
+import {FormControl, FormErrorMessage, FormLabel} from "@chakra-ui/form-control";
 import {Toaster} from "./ui/toaster.jsx";
-import {FaEyeSlash} from "react-icons/fa";
-import {IoEyeSharp} from "react-icons/io5";
-
-import {Box, Button, Flex, Heading, HStack, Input, Link, Stack, Text,} from "@chakra-ui/react";
+import {Box, Button, Flex, Heading, HStack, Input, Link, Stack, Text} from "@chakra-ui/react";
 import {useColorModeValue} from "./ui/color-mode.jsx";
 import {useState} from "react";
 import {useSetRecoilState} from "recoil";
@@ -12,178 +8,209 @@ import authScreenAtom from "../atoms/authAtom.js";
 import useShowToast from "../hooks/useShowToast.js";
 import userAtom from "../atoms/userAtom.js";
 import {useNavigate} from "react-router-dom";
+import {PasswordInput} from "./ui/password-input.jsx";
 
 export default function SignupCard() {
-    const [showPassword, setShowPassword] = useState(false);
     const setAuthScreenState = useSetRecoilState(authScreenAtom);
     const showToast = useShowToast();
     const setUser = useSetRecoilState(userAtom);
     const navigate = useNavigate();
 
     const [inputs, setInputs] = useState({
-        name: "Марина Сергеевна",
-        username: "MarinaSergeevna",
-        email: "marinaSergects@gmail.com",
-        password: "7ItRVN32rJ",
+        name: "", username: "", email: "", password: "",
     });
 
+    const [errors, setErrors] = useState({
+        name: "", username: "", email: "", password: "",
+    });
+
+    // Функция валидации
+    const validateInputs = () => {
+        let isValid = true;
+        const newErrors = {name: "", username: "", email: "", password: ""};
+
+        // Валидация имени
+        if (!inputs.name) {
+            newErrors.name = "Имя обязательно";
+            isValid = false;
+        } else if (inputs.name.length < 2) {
+            newErrors.name = "Имя должно содержать минимум 2 символа";
+            isValid = false;
+        } else if (!/^[a-zA-Zа-яА-Я\s]+$/.test(inputs.name)) {
+            newErrors.name = "Имя может содержать только буквы и пробелы";
+            isValid = false;
+        }
+
+        // Валидация логина
+        if (!inputs.username) {
+            newErrors.username = "Логин обязателен";
+            isValid = false;
+        } else if (inputs.username.length < 3) {
+            newErrors.username = "Логин должен содержать минимум 3 символа";
+            isValid = false;
+        } else if (!/^[a-zA-Z0-9_]+$/.test(inputs.username)) {
+            newErrors.username = "Логин может содержать только буквы, цифры и подчеркивания";
+            isValid = false;
+        }
+
+        // Валидация почты
+        if (!inputs.email) {
+            newErrors.email = "Почта обязательна";
+            isValid = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputs.email)) {
+            newErrors.email = "Неверный формат почты";
+            isValid = false;
+        }
+
+        // Валидация пароля
+        if (!inputs.password) {
+            newErrors.password = "Пароль обязателен";
+            isValid = false;
+        } else if (inputs.password.length < 8) {
+            newErrors.password = "Пароль должен содержать минимум 8 символов";
+            isValid = false;
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(inputs.password)) {
+            newErrors.password = "Пароль должен содержать заглавную букву, строчную букву, цифру и специальный символ";
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+        return isValid;
+    };
 
     const handleSignup = async () => {
+        if (!validateInputs()) {
+            showToast("Ошибка", "Пожалуйста, исправьте ошибки в форме", "error");
+            return;
+        }
+
         try {
             const res = await fetch("/api/users/signup", {
-                method: "POST",
-                headers: {
+                method: "POST", headers: {
                     "Content-Type": "application/json",
-                },
-                body: JSON.stringify({...inputs, role: "teacher"}),
+                }, body: JSON.stringify({...inputs, role: "teacher"}),
             });
 
             const data = await res.json();
 
             if (data.error) {
-                showToast("Error", data.error, "error");
-
+                showToast("Ошибка", data.error, "error");
                 return;
             }
 
             localStorage.setItem("user-threads", JSON.stringify(data));
-            navigate("/")
+            navigate("/");
             setUser(data);
         } catch (error) {
-            showToast("Error", error, "error");
+            showToast("Ошибка", error.message, "error");
         }
     };
 
-    return (
-        <Flex
-            minH={"100vh"}
-            align={"center"}
-            justify={"center"}
-            bg={useColorModeValue("gray.white", "gray.black")}
-        >
-            <Toaster/>
-            <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
-                <Stack align={"center"}>
-                    <Heading fontSize={"4xl"} textAlign={"center"} m={"0 0 25px 0"}>
-                        Зарегистрироваться как преподаватель
-                    </Heading>
-                </Stack>
-                <Box
-                    rounded={"lg"}
-                    bg={useColorModeValue("gray.white", "gray.dark")}
-                    boxShadow={"lg"}
-                    p={8}
-                >
-                    <Stack spacing={4}>
-                        <HStack>
-                            <Box>
-                                <FormControl>
-                                    <FormLabel m={"0 0 10px 0"}>Полное имя</FormLabel>
-                                    <Input
-                                        value={inputs.username}
-                                        onChange={(e) =>
-                                            setInputs({...inputs, username: e.target.value})
-                                        }
-                                        borderWidth={"1px"}
-                                        borderStyle={"solid"}
-                                        borderRadius={"5"}
-                                        w={"100%"}
-                                        h={"35px"}
-                                        type="text"
-                                    />
-                                </FormControl>
-                            </Box>
-                            <Box>
-                                <FormControl id="lastName">
-                                    <FormLabel m={"0 0 10px 0"}>Логин</FormLabel>
-                                    <Input
-                                        value={inputs.name}
-                                        onChange={(e) =>
-                                            setInputs({...inputs, name: e.target.value})
-                                        }
-                                        borderWidth={"1px"}
-                                        borderStyle={"solid"}
-                                        borderRadius={"5"}
-                                        w={"100%"}
-                                        h={"35px"}
-                                        type="text"
-                                    />
-                                </FormControl>
-                            </Box>
-                        </HStack>
-                        <FormControl id="email" isRequired>
-                            <FormLabel m={"0 0 10px 0"}>Почта</FormLabel>
-                            <Input
-                                value={inputs.email}
-                                onChange={(e) =>
-                                    setInputs({...inputs, email: e.target.value})
-                                }
-                                borderWidth={"1px"}
-                                borderStyle={"solid"}
-                                borderRadius={"5"}
-                                w={"100%"}
-                                h={"35px"}
-                                type="email"
-                            />
-                        </FormControl>
-                        <FormControl m={"0 0 10px 0"} id="password" isRequired>
-                            <FormLabel m={"0 0 10px 0"}>Пароль</FormLabel>
-                            <InputGroup>
+    return (<Flex
+        align={"center"}
+        justify={"center"}
+        bg={useColorModeValue("gray.white", "gray.black")}
+    >
+        <Toaster/>
+        <Stack spacing={8} mx={"auto"} maxW={"lg"} py={12} px={6}>
+            <Stack align={"center"}>
+                <Heading fontSize={"4xl"} textAlign={"center"} m={"0 0 25px 0"}>
+                    Зарегистрироваться как преподаватель
+                </Heading>
+            </Stack>
+            <Box
+                rounded={"lg"}
+                bg={useColorModeValue("gray.white", "gray.dark")}
+                boxShadow={"lg"}
+                p={8}
+            >
+                <Stack spacing={4}>
+                    <HStack>
+                        <Box flex="1">
+                            <FormControl isInvalid={!!errors.username}>
+                                <FormLabel m={"0 0 10px 0"}>Логин</FormLabel>
                                 <Input
-                                    value={inputs.password}
-                                    onChange={(e) =>
-                                        setInputs({...inputs, password: e.target.value})
-                                    }
+                                    value={inputs.username}
+                                    onChange={(e) => setInputs({...inputs, username: e.target.value})}
                                     borderWidth={"1px"}
                                     borderStyle={"solid"}
                                     borderRadius={"5"}
                                     w={"100%"}
                                     h={"35px"}
-                                    type={showPassword ? "text" : "password"}
+                                    type="text"
                                 />
-                                <InputRightElement h={"full"}>
-                                    <Button
-                                        variant={"ghost"}
-                                        onClick={() =>
-                                            setShowPassword((showPassword) => !showPassword)
-                                        }
-                                    >
-                                        {showPassword ? <FaEyeSlash/> : <IoEyeSharp/>}
-                                    </Button>
-                                </InputRightElement>
-                            </InputGroup>
-                        </FormControl>
-                        <Stack spacing={10} pt={2}>
-                            <Button
-                                onClick={() => handleSignup()}
-                                loadingText="Submitting"
-                                size="lg"
-                                bg={"blue.400"}
-                                color={"white"}
-                                _hover={{
-                                    bg: "blue.500",
-                                }}
-                            >
-                                Зарегистрироваться
-                            </Button>
-                        </Stack>
-                        <Stack pt={6}>
-                            <Text
-                                textAlign="center"
-                                color={useColorModeValue("base.dark", "base.white")}
-                            >
-                                У вас есть аккаунт?{" "}
-                                <Link
-                                    color={"blue.400"}
-                                    onClick={() => setAuthScreenState("login")}
-                                >
-                                    Войти в аккаунт
-                                </Link>
-                            </Text>
-                        </Stack>
+                                <FormErrorMessage>{errors.username}</FormErrorMessage>
+                            </FormControl>
+                        </Box>
+                        <Box flex="1">
+                            <FormControl isInvalid={!!errors.name}>
+                                <FormLabel m={"0 0 10px 0"}>ФИО</FormLabel>
+                                <Input
+                                    value={inputs.name}
+                                    onChange={(e) => setInputs({...inputs, name: e.target.value})}
+                                    borderWidth={"1px"}
+                                    borderStyle={"solid"}
+                                    borderRadius={"5"}
+                                    w={"100%"}
+                                    h={"35px"}
+                                    type="text"
+                                />
+                                <FormErrorMessage>{errors.name}</FormErrorMessage>
+                            </FormControl>
+                        </Box>
+                    </HStack>
+                    <FormControl isInvalid={!!errors.email} isRequired>
+                        <FormLabel m={"0 0 10px 0"}>Почта</FormLabel>
+                        <Input
+                            value={inputs.email}
+                            onChange={(e) => setInputs({...inputs, email: e.target.value})}
+                            borderWidth={"1px"}
+                            borderStyle={"solid"}
+                            borderRadius={"5"}
+                            w={"100%"}
+                            h={"35px"}
+                            type="email"
+                        />
+                        <FormErrorMessage>{errors.email}</FormErrorMessage>
+                    </FormControl>
+                    <FormControl isInvalid={!!errors.password} isRequired>
+                        <FormLabel m={"0 0 10px 0"}>Пароль</FormLabel>
+                        <PasswordInput
+                            value={inputs.password}
+                            onChange={(e) => setInputs({...inputs, password: e.target.value})}
+                        />
+                        <FormErrorMessage>{errors.password}</FormErrorMessage>
+                    </FormControl>
+                    <Stack spacing={10} pt={2}>
+                        <Button
+                            onClick={handleSignup}
+                            loadingText="Submitting"
+                            size="lg"
+                            bg={"blue.400"}
+                            color={"white"}
+                            _hover={{
+                                bg: "blue.500",
+                            }}
+                        >
+                            Зарегистрироваться
+                        </Button>
                     </Stack>
-                </Box>
-            </Stack>
-        </Flex>
-    );
+                    <Stack pt={6}>
+                        <Text
+                            textAlign="center"
+                            color={useColorModeValue("base.dark", "base.white")}
+                        >
+                            У вас есть аккаунт?{" "}
+                            <Link
+                                color={"blue.400"}
+                                onClick={() => setAuthScreenState("login")}
+                            >
+                                Войти в аккаунт
+                            </Link>
+                        </Text>
+                    </Stack>
+                </Stack>
+            </Box>
+        </Stack>
+    </Flex>);
 }
