@@ -143,7 +143,7 @@ export const CreateSchool = ({ setSchools }) => {
                                         maxLength={MAX_CHAR}
                                         onBlur={validateInputs} // Валидация при потере фокуса
                                     />
-                                    <FormErrorMessage>{errors.title}</FormErrorMessage>
+                                    <FormErrorMessage color={"red"}>{errors.title}</FormErrorMessage>
                                 </FormControl>
                                 <FormControl isRequired isInvalid={!!errors.inn}>
                                     <FormLabel m={"0 0 10px 0"}>ИНН</FormLabel>
@@ -159,7 +159,7 @@ export const CreateSchool = ({ setSchools }) => {
                                         maxLength={12} // Ограничение длины ИНН
                                         onBlur={validateInputs}
                                     />
-                                    <FormErrorMessage>{errors.inn}</FormErrorMessage>
+                                    <FormErrorMessage color={"red"}>{errors.inn}</FormErrorMessage>
                                 </FormControl>
                                 <FormControl isRequired isInvalid={!!errors.email}>
                                     <FormLabel m={"0 0 10px 0"}>Почта</FormLabel>
@@ -175,7 +175,7 @@ export const CreateSchool = ({ setSchools }) => {
                                         maxLength={MAX_CHAR}
                                         onBlur={validateInputs}
                                     />
-                                    <FormErrorMessage>{errors.email}</FormErrorMessage>
+                                    <FormErrorMessage  color={"red"}>{errors.email}</FormErrorMessage>
                                 </FormControl>
                                 <Stack spacing={10} pt={2}>
                                     <Button

@@ -5,7 +5,9 @@ import Status from "../models/statusModel.js";
 
 const createEvent = async (req, res) => {
     try {
+        console.log("req.user._id", req.user._id)
         const teacherId = req.user._id;
+
         const {
             name, description, date, time, status, price, address, img, groupId,
         } = req.body;
@@ -19,10 +21,11 @@ const createEvent = async (req, res) => {
             return res.status(403).json({error: "У вас нет прав для создания мероприятия в этой группе"});
         }
 
-        const statusDoc = await Status.findOne({name: status[0]})
+        const statusDoc = await Status.findOne({name: status})
+        console.log(status)
         console.log("status", status[0], "statusDoc", statusDoc)
         // Поиск ObjectId статуса
-
+        console.log("statusDoc._id", statusDoc._id)
         // Создание мероприятия
         const newEvent = new Event({
             name,
@@ -45,6 +48,7 @@ const createEvent = async (req, res) => {
         });
 
         // Добавление ID мероприятия в массив events группы
+        console.log("newEvent._id", newEvent._id)
         group.events.push(newEvent._id);
         await group.save();
 

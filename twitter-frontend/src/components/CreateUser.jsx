@@ -155,7 +155,7 @@ export default function CreateUser({setGroupUsers, activeGroupId, isDisabled, ac
                                             h={"35px"}
                                             type="text"
                                         />
-                                        {errors.username && <FormErrorMessage>{errors.username}</FormErrorMessage>}
+                                        {errors.username && <FormErrorMessage  color={"red"}>{errors.username}</FormErrorMessage>}
                                     </FormControl>
                                 </Box>
                                 <Box>
@@ -172,7 +172,7 @@ export default function CreateUser({setGroupUsers, activeGroupId, isDisabled, ac
                                             h={"35px"}
                                             type="text"
                                         />
-                                        {errors.name && <FormErrorMessage>{errors.name}</FormErrorMessage>}
+                                        {errors.name && <FormErrorMessage color={"red"}>{errors.name}</FormErrorMessage>}
                                     </FormControl>
                                 </Box>
                             </HStack>
@@ -189,7 +189,7 @@ export default function CreateUser({setGroupUsers, activeGroupId, isDisabled, ac
                                     h={"35px"}
                                     type="email"
                                 />
-                                {errors.email && <FormErrorMessage>{errors.email}</FormErrorMessage>}
+                                {errors.email && <FormErrorMessage color={"red"}>{errors.email}</FormErrorMessage>}
                             </FormControl>
                             <FormControl m={"0 0 10px 0"} isInvalid={!!errors.password} isRequired>
                                 <FormLabel m={"0 0 10px 0"}>Пароль</FormLabel>
@@ -198,7 +198,7 @@ export default function CreateUser({setGroupUsers, activeGroupId, isDisabled, ac
                                     value={inputs.password}
                                     onChange={handleInputChange}
                                 />
-                                {errors.password && <FormErrorMessage>{errors.password}</FormErrorMessage>}
+                                {errors.password && <FormErrorMessage color={"red"}>{errors.password}</FormErrorMessage>}
                             </FormControl>
                             <Stack spacing={10} pt={2}>
                                 <Button

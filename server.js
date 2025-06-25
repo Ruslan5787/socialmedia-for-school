@@ -15,7 +15,6 @@ import roomsRoutes from "./twitter-backend/routes/roomsRoutes.js";
 import cors from "cors";
 import {startCronJobs} from "./twitter-backend/cron/cron.js";
 import connectDB from "./twitter-backend/db/connectDB.js";
-import {initStatuses} from "./twitter-backend/db/initStatus.js";
 
 dotenv.config();
 
@@ -32,7 +31,7 @@ cloudinary.config({
 
 // Middlewares
 app.use(cors({
-    origin: "https://socialmedia-for-school-frontend.vercel.app/auth", // Замените на ваш Vercel URL
+    origin: "*", // Замените на ваш Vercel URL
     credentials: true
 }));
 app.use(express.json({limit: "50mb"})); // To parse JSON data in the req.body

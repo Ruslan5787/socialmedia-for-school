@@ -93,7 +93,7 @@ export const UserPost = ({postId, userAvatar, setPostsCount, postAuthor}) => {
             <Box flex={1}>
                 <Flex justifyContent={"space-between"} w={"full"}>
                     <Link to={`/${authUser?.username}/post/${post?._id}`}>
-                        <Flex mb={2} alignItems={"center"} textAlign={"center"}>
+                        <Flex mb={2} alignItems={"center"}>
                             <Text fonWeight={"bold"} mr={2}>{postAuthor?.username}</Text>
                             <BsFillPatchCheckFill color="#3D90D7"/>
                         </Flex>

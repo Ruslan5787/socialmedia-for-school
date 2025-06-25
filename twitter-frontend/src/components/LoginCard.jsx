@@ -120,7 +120,7 @@ export default function LoginCard() {
                                 h={"35px"}
                                 type="text"
                             />
-                            <FormErrorMessage>{errors.username}</FormErrorMessage>
+                            <FormErrorMessage color={"red"}>{errors.username}</FormErrorMessage>
                         </FormControl>
                         <FormControl m={"0 0 10px 0"} isRequired isInvalid={!!errors.password}>
                             <FormLabel m={"0 0 10px 0"}>Пароль</FormLabel>
@@ -133,7 +133,7 @@ export default function LoginCard() {
                                     }))
                                 }
                             />
-                            <FormErrorMessage>{errors.password}</FormErrorMessage>
+                            <FormErrorMessage color={"red"}>{errors.password}</FormErrorMessage>
                         </FormControl>
                         <Stack spacing={10} pt={2}>
                             <Button

@@ -6,7 +6,6 @@ import {
     Input,
     List,
     Portal,
-    Select,
     Stack,
     useDialog,
 } from "@chakra-ui/react";
@@ -23,33 +22,17 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
     const [isOpen, setIsOpen] = useState(false);
     const dialog = useDialog({open: isOpen, setOpenChange: setIsOpen});
     const [inputs, setInputs] = useState({
-        name: "",
-        description: "",
-        date: "",
-        time: "",
-        status: "", // Статус как строка
-        price: 0,
-        address: "",
-        img: "",
+        name: "", description: "", date: "", time: "", status: "", // Статус как строка
+        price: 0, address: "", img: "",
     });
     const [errors, setErrors] = useState({
-        name: "",
-        description: "",
-        date: "",
-        time: "",
-        status: "",
-        price: "",
-        address: "",
-        img: "",
+        name: "", description: "", date: "", time: "", status: "", price: "", address: "", img: "",
     });
     const [addressSuggestions, setAddressSuggestions] = useState([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
     const frameworks = createListCollection({
-        items: [
-            {label: "обязательное", value: "mandatory"},
-            {label: "необязательное", value: "optional"},
-        ],
+        items: [{label: "обязательное", value: "mandatory"}, {label: "необязательное", value: "optional"},],
     });
 
     // Получить минимальную дату (сегодня)
@@ -61,9 +44,7 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
     // Получить минимальное время для сегодняшней даты
     const getMinTime = () => {
         const now = new Date();
-        return inputs.date === getMinDate()
-            ? `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`
-            : "00:00";
+        return inputs.date === getMinDate() ? `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}` : "00:00";
     };
 
     // Валидация полей
@@ -115,15 +96,9 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
 
         setIsLoadingSuggestions(true);
         try {
-            const response = await fetch(
-                `https://geocode-maps.yandex.ru/1.x/?format=json&geocode=${encodeURIComponent(
-                    `Екатеринбург, ${query}`
-                )}&apikey=3250a4d0-877c-45ba-8aba-45b1f9d82852`
-            );
+            const response = await fetch(`https://geocode-maps.yandex.ru/1.x/?format=json&geocode=${encodeURIComponent(`Екатеринбург, ${query}`)}&apikey=3250a4d0-877c-45ba-8aba-45b1f9d82852`);
             const data = await response.json();
-            const suggestions = data.response.GeoObjectCollection.featureMember.map(
-                (item) => item.GeoObject.metaDataProperty.GeocoderMetaData.text
-            );
+            const suggestions = data.response.GeoObjectCollection.featureMember.map((item) => item.GeoObject.metaDataProperty.GeocoderMetaData.text);
             setAddressSuggestions(suggestions);
         } catch (error) {
             console.error("Ошибка при получении предложений адреса:", error);
@@ -153,8 +128,8 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
 
     // Обработка изменения статуса
     const handleStatusChange = (value) => {
-        setInputs({...inputs, status: value}); // Устанавливаем строку
-        setErrors({...errors, status: validateInputs("status", value)});
+        setInputs((prev) => ({...prev, status: value}));
+        setErrors((prev) => ({...prev, status: validateInputs("status", value)}));
     };
 
     const handleCreate = async () => {
@@ -185,11 +160,9 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
 
         try {
             const res = await fetch("/api/events/create", {
-                method: "POST",
-                headers: {
+                method: "POST", headers: {
                     "Content-Type": "application/json",
-                },
-                body: JSON.stringify({...inputs, groupId: activeTab}),
+                }, body: JSON.stringify({...inputs, groupId: activeTab}),
             });
 
             const data = await res.json();
@@ -202,24 +175,10 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
             setIsOpen(false);
             showToast("Успех", "Мероприятие создано", "success");
             setInputs({
-                name: "",
-                description: "",
-                date: "",
-                time: "",
-                status: "",
-                price: 0,
-                address: "",
-                img: "",
+                name: "", description: "", date: "", time: "", status: "", price: 0, address: "", img: "",
             });
             setErrors({
-                name: "",
-                description: "",
-                date: "",
-                time: "",
-                status: "",
-                price: "",
-                address: "",
-                img: "",
+                name: "", description: "", date: "", time: "", status: "", price: "", address: "", img: "",
             });
             setAddressSuggestions([]);
         } catch (error) {
@@ -227,192 +186,167 @@ export const CreateEvents = ({groupEvents, setGroupEvents, activeTab, isDisabled
         }
     };
 
-    return (
-        <Dialog.RootProvider
-            size="sm"
-            placement="center"
-            motionPreset="slide-in-bottom"
-            value={dialog}
-        >
-            <Toaster/>
-            <Dialog.Trigger asChild>
-                <Button
-                    onClick={() => setIsOpen(true)}
-                    variant="outline"
-                    size="xl"
-                    isDisabled={isDisabled}
-                >
-                    <IoMdAddCircleOutline/> Создать мероприятие
-                </Button>
-            </Dialog.Trigger>
-            <Portal>
-                <Dialog.Backdrop/>
-                <Dialog.Positioner>
-                    <Dialog.Content>
-                        <Dialog.Header>
-                            <Dialog.Title>Создание мероприятия</Dialog.Title>
-                            <Dialog.CloseTrigger asChild>
-                                <CloseButton
-                                    onClick={() => {
-                                        setIsOpen(false);
-                                        setInputs({
-                                            name: "",
-                                            description: "",
-                                            date: "",
-                                            time: "",
-                                            status: "",
-                                            price: 0,
-                                            address: "",
-                                            img: "",
-                                        });
-                                    }}
-                                    size="xl"
-                                />
-                            </Dialog.CloseTrigger>
-                        </Dialog.Header>
-                        <Dialog.Body>
-                            <FormControl isRequired isInvalid={!!errors.name}>
-                                <FormLabel>Название</FormLabel>
-                                <Input
-                                    name="name"
-                                    value={inputs.name}
-                                    onChange={handleInputChange}
-                                    type="text"
-                                />
-                                {errors.name && <FormErrorMessage>{errors.name}</FormErrorMessage>}
-                            </FormControl>
-                            <FormControl isRequired isInvalid={!!errors.description}>
-                                <FormLabel>Описание</FormLabel>
-                                <Input
-                                    name="description"
-                                    value={inputs.description}
-                                    onChange={handleInputChange}
-                                    type="text"
-                                />
-                                {errors.description && <FormErrorMessage>{errors.description}</FormErrorMessage>}
-                            </FormControl>
-                            <FormControl isRequired isInvalid={!!errors.date}>
-                                <FormLabel>Дата</FormLabel>
-                                <Input
-                                    name="date"
-                                    value={inputs.date}
-                                    onChange={handleInputChange}
-                                    type="date"
-                                    min={getMinDate()}
-                                />
-                                {errors.date && <FormErrorMessage>{errors.date}</FormErrorMessage>}
-                            </FormControl>
-                            <FormControl isRequired isInvalid={!!errors.time}>
-                                <FormLabel>Время</FormLabel>
-                                <Input
-                                    name="time"
-                                    value={inputs.time}
-                                    onChange={handleInputChange}
-                                    type="time"
-                                    min={getMinTime()}
-                                />
-                                {errors.time && <FormErrorMessage>{errors.time}</FormErrorMessage>}
-                            </FormControl>
-                            <FormControl isRequired isInvalid={!!errors.status}>
-                                <Select.Root collection={frameworks} size="sm">
-                                    <Select.HiddenSelect/>
-                                    <Select.Label>Cтатус*</Select.Label>
-                                    <Select.Control>
-                                        <Select.Trigger>
-                                            <Select.ValueText placeholder="Выберите статус..."/>
-                                        </Select.Trigger>
-                                        <Select.IndicatorGroup>
-                                            <Select.Indicator/>
-                                        </Select.IndicatorGroup>
-                                    </Select.Control>
-                                    <Portal>
-                                        <Select.Positioner>
-                                            <Select.Content>
-                                                {frameworks.items.map((framework) => (
-                                                    <Select.Item item={framework} key={framework.value}>
-                                                        {framework.label}
-                                                        <Select.ItemIndicator/>
-                                                    </Select.Item>
-                                                ))}
-                                            </Select.Content>
-                                        </Select.Positioner>
-                                    </Portal>
-                                </Select.Root>
-
-                                {errors.status && <FormErrorMessage>{errors.status}</FormErrorMessage>}
-                            </FormControl>
-                            <FormControl isInvalid={!!errors.address}>
-                                <FormLabel>Адрес*</FormLabel>
-                                <Input
-                                    name="address"
-                                    value={inputs.address}
-                                    onChange={handleInputChange}
-                                    type="text"
-                                />
-                                {errors.address && <FormErrorMessage>{errors.address}</FormErrorMessage>}
-                                {addressSuggestions.length > 0 && (
-                                    <List.Root
-                                        position="absolute"
-                                        background={colorMode === "light" ? "white" : "gray.800"}
-                                        mt={2}
-                                        border="1px solid"
-                                        zIndex="docked"
-                                        borderColor="gray.200"
-                                        borderRadius="md"
-                                        maxH="150px"
-                                        overflowY="auto"
-                                        left="10px"
-                                        w="430px"
-                                    >
-                                        {addressSuggestions.map((suggestion, index) => (
-                                            <List.Item
-                                                borderBottom={addressSuggestions.length === index + 1 ? "none" : "1px solid"}
-                                                key={index}
-                                                px={3}
-                                                py={2}
-                                                cursor="pointer"
-                                                onClick={() => handleSuggestionClick(suggestion)}
-                                                _hover={{bg: "gray.100"}}
-                                            >
-                                                {suggestion}
-                                            </List.Item>
-                                        ))}
-                                    </List.Root>
-                                )}
-                            </FormControl>
-                            <FormControl isInvalid={!!errors.img}>
-                                <FormLabel>Изображение (URL)</FormLabel>
-                                <Input
-                                    name="img"
-                                    value={inputs.img}
-                                    onChange={handleInputChange}
-                                    type="text"
-                                />
-                                {errors.img && <FormErrorMessage>{errors.img}</FormErrorMessage>}
-                            </FormControl>
-                            <Stack spacing={10} pt={2}>
-                                <Button
-                                    onClick={handleCreate}
-                                    size="lg"
-                                    bg="blue.400"
-                                    color="white"
-                                    _hover={{bg: "blue.500"}}
-                                    isDisabled={
-                                        Object.values(errors).some((error) => error) ||
-                                        !inputs.name ||
-                                        !inputs.description ||
-                                        !inputs.date ||
-                                        !inputs.time ||
-                                        !inputs.status
-                                    }
+    return (<Dialog.RootProvider
+        size="sm"
+        placement="center"
+        motionPreset="slide-in-bottom"
+        value={dialog}
+    >
+        <Toaster/>
+        <Dialog.Trigger asChild>
+            <Button
+                onClick={() => setIsOpen(true)}
+                variant="outline"
+                size="xl"
+                isDisabled={isDisabled}
+            >
+                <IoMdAddCircleOutline/> Создать мероприятие
+            </Button>
+        </Dialog.Trigger>
+        <Portal>
+            <Dialog.Backdrop/>
+            <Dialog.Positioner>
+                <Dialog.Content>
+                    <Dialog.Header>
+                        <Dialog.Title>Создание мероприятия</Dialog.Title>
+                        <Dialog.CloseTrigger asChild>
+                            <CloseButton
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    setInputs({
+                                        name: "",
+                                        description: "",
+                                        date: "",
+                                        time: "",
+                                        status: "",
+                                        price: 0,
+                                        address: "",
+                                        img: "",
+                                    });
+                                }}
+                                size="xl"
+                            />
+                        </Dialog.CloseTrigger>
+                    </Dialog.Header>
+                    <Dialog.Body>
+                        <FormControl isRequired isInvalid={!!errors.name}>
+                            <FormLabel>Название</FormLabel>
+                            <Input
+                                name="name"
+                                value={inputs.name}
+                                onChange={handleInputChange}
+                                type="text"
+                            />
+                            {errors.name && <FormErrorMessage color={"red"}>{errors.name}</FormErrorMessage>}
+                        </FormControl>
+                        <FormControl isRequired isInvalid={!!errors.description}>
+                            <FormLabel>Описание</FormLabel>
+                            <Input
+                                name="description"
+                                value={inputs.description}
+                                onChange={handleInputChange}
+                                type="text"
+                            />
+                            {errors.description &&
+                                <FormErrorMessage color={"red"}>{errors.description}</FormErrorMessage>}
+                        </FormControl>
+                        <FormControl isRequired isInvalid={!!errors.date}>
+                            <FormLabel>Дата</FormLabel>
+                            <Input
+                                name="date"
+                                value={inputs.date}
+                                onChange={handleInputChange}
+                                type="date"
+                                min={getMinDate()}
+                            />
+                            {errors.date && <FormErrorMessage color={"red"}>{errors.date}</FormErrorMessage>}
+                        </FormControl>
+                        <FormControl isRequired isInvalid={!!errors.time}>
+                            <FormLabel>Время</FormLabel>
+                            <Input
+                                name="time"
+                                value={inputs.time}
+                                onChange={handleInputChange}
+                                type="time"
+                                min={getMinTime()}
+                            />
+                            {errors.time && <FormErrorMessage color={"red"}>{errors.time}</FormErrorMessage>}
+                        </FormControl>
+                        <FormControl isRequired isInvalid={!!errors.status}>
+                            <FormLabel>Статус*</FormLabel>
+                            <select
+                                value={inputs.status}
+                                onChange={(e) => handleStatusChange(e.target.value)}
+                                style={{height: "40px", borderRadius: "4px", padding: "8px"}}
+                            >
+                                <option value="" disabled>
+                                    Выберите статус...
+                                </option>
+                                <option value="mandatory">обязательное</option>
+                                <option value="optional">необязательное</option>
+                            </select>
+                            {errors.status && <FormErrorMessage color={"red"}>{errors.status}</FormErrorMessage>}
+                        </FormControl>
+                        <FormControl isInvalid={!!errors.address}>
+                            <FormLabel>Адрес*</FormLabel>
+                            <Input
+                                name="address"
+                                value={inputs.address}
+                                onChange={handleInputChange}
+                                type="text"
+                            />
+                            {errors.address && <FormErrorMessage color={"red"}>{errors.address}</FormErrorMessage>}
+                            {addressSuggestions.length > 0 && (<List.Root
+                                position="absolute"
+                                background={colorMode === "light" ? "white" : "gray.800"}
+                                mt={2}
+                                border="1px solid"
+                                zIndex="docked"
+                                borderColor="gray.200"
+                                borderRadius="md"
+                                maxH="150px"
+                                overflowY="auto"
+                                left="10px"
+                                w="430px"
+                            >
+                                {addressSuggestions.map((suggestion, index) => (<List.Item
+                                    borderBottom={addressSuggestions.length === index + 1 ? "none" : "1px solid"}
+                                    key={index}
+                                    px={3}
+                                    py={2}
+                                    cursor="pointer"
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                    _hover={{bg: "gray.100"}}
                                 >
-                                    Создать
-                                </Button>
-                            </Stack>
-                        </Dialog.Body>
-                    </Dialog.Content>
-                </Dialog.Positioner>
-            </Portal>
-        </Dialog.RootProvider>
-    );
+                                    {suggestion}
+                                </List.Item>))}
+                            </List.Root>)}
+                        </FormControl>
+                        <FormControl isInvalid={!!errors.img}>
+                            <FormLabel>Изображение (URL)</FormLabel>
+                            <Input
+                                name="img"
+                                value={inputs.img}
+                                onChange={handleInputChange}
+                                type="text"
+                            />
+                            {errors.img && <FormErrorMessage color={"red"}>{errors.img}</FormErrorMessage>}
+                        </FormControl>
+                        <Stack spacing={10} pt={2}>
+                            <Button
+                                onClick={handleCreate}
+                                size="lg"
+                                bg="blue.400"
+                                color="white"
+                                _hover={{bg: "blue.500"}}
+                                isDisabled={Object.values(errors).some((error) => error) || !inputs.name || !inputs.description || !inputs.date || !inputs.time || !inputs.status}
+                            >
+                                Создать
+                            </Button>
+                        </Stack>
+                    </Dialog.Body>
+                </Dialog.Content>
+            </Dialog.Positioner>
+        </Portal>
+    </Dialog.RootProvider>);
 };

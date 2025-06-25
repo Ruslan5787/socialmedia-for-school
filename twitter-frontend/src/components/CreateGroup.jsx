@@ -114,7 +114,7 @@ export default function CreateGroup({schoolId, setGroups, setActiveTab}) {
                                             w={"full"}
                                             type="text"
                                         />
-                                        {error && <FormErrorMessage>{error}</FormErrorMessage>}
+                                        {error && <FormErrorMessage  color={"red"}>{error}</FormErrorMessage>}
                                     </FormControl>
                                 </Box>
                             </HStack>

@@ -56,7 +56,7 @@ export const Post = ({postInfo, postedBy}) => {
             <Flex gap={3} my={5} mb={20} width={"full"}>
                 <Flex
                     position="relative"
-                    mr={5}
+                    mr={{base:"5px", md: "10px"}}
                     flexDirection={"column"}
                     justifyContent={"space-between"}
                     alignItems={"center"}
@@ -74,9 +74,9 @@ export const Post = ({postInfo, postedBy}) => {
                 </Flex>
 
                 <Box flex={1}>
-                    <Flex justifyContent={"space-between"} w={"full"}>
+                    <Flex justifyContent={"space-between"} w={"full"} flexDirection={{base:"column", md: "row"}}>
                         <Box mb={2}>
-                            <Flex mb={2} alignItems={"center"} textAlign={"center"}>
+                            <Flex mb={2} alignItems={"center"}>
                                 <Link to={`/${postedPostUser.username}/post/${postInfo._id}`}>
                                     <Text fontWeight={"bold"} mr={2}>
                                         {postedPostUser.name}
@@ -89,7 +89,7 @@ export const Post = ({postInfo, postedBy}) => {
                         </Box>
 
                         <Flex>
-                            <Text color={"gray.light"} fontWeight={"light"} mr={2} fontSize={13}>
+                            <Text mb={{base: "5px", md: "0px"}} color={"gray.light"} fontWeight={"light"} mr={2} fontSize={13}>
                                 {formatDistanceToNow(new Date(postInfo.createdAt))} назад
                             </Text>
                         </Flex>
@@ -99,8 +99,6 @@ export const Post = ({postInfo, postedBy}) => {
                         <Box
                             maxW={570}
                             maxH={320}
-                            w="full"
-                            h="full"
                             mb={5}
                             borderRadius={6}
                             overflow={"hidden"}

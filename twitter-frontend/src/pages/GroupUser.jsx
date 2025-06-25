@@ -87,9 +87,9 @@ export const GroupUser = () => {
                 {events.map((event) => (<List.Item
                     key={event._id}
                     p={4}
+                    mb={"10px"}
                     borderWidth="1px"
                     borderRadius="md"
-                    _hover={{bg: "gray.100", cursor: "pointer"}}
                     onClick={() => handleEventClick(event._id)} // Переход на страницу мероприятия
                 >
                     <Flex justifyContent="space-between">
@@ -106,7 +106,6 @@ export const GroupUser = () => {
                                 Статус: {event.status.name === "mandatory" ? "обязательное" : "необязательное"}
                             </Text>
                         </Box>
-                        {event.img && <Avatar src={event.img} size="md"/>}
                     </Flex>
                 </List.Item>))}
             </List.Root>) : (<Text fontSize="md" color="gray.500">Мероприятия отсутствуют</Text>)}

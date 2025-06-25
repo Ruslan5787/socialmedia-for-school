@@ -139,7 +139,7 @@ export default function SignupCard() {
                                     h={"35px"}
                                     type="text"
                                 />
-                                <FormErrorMessage>{errors.username}</FormErrorMessage>
+                                <FormErrorMessage color={"red"}>{errors.username}</FormErrorMessage>
                             </FormControl>
                         </Box>
                         <Box flex="1">
@@ -155,7 +155,7 @@ export default function SignupCard() {
                                     h={"35px"}
                                     type="text"
                                 />
-                                <FormErrorMessage>{errors.name}</FormErrorMessage>
+                                <FormErrorMessage color={"red"}>{errors.name}</FormErrorMessage>
                             </FormControl>
                         </Box>
                     </HStack>
@@ -171,7 +171,7 @@ export default function SignupCard() {
                             h={"35px"}
                             type="email"
                         />
-                        <FormErrorMessage>{errors.email}</FormErrorMessage>
+                        <FormErrorMessage color={"red"}>{errors.email}</FormErrorMessage>
                     </FormControl>
                     <FormControl isInvalid={!!errors.password} isRequired>
                         <FormLabel m={"0 0 10px 0"}>Пароль</FormLabel>
@@ -179,7 +179,7 @@ export default function SignupCard() {
                             value={inputs.password}
                             onChange={(e) => setInputs({...inputs, password: e.target.value})}
                         />
-                        <FormErrorMessage>{errors.password}</FormErrorMessage>
+                        <FormErrorMessage color={"red"}>{errors.password}</FormErrorMessage>
                     </FormControl>
                     <Stack spacing={10} pt={2}>
                         <Button
