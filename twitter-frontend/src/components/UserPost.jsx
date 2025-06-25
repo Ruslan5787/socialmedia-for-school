@@ -72,7 +72,7 @@ export const UserPost = ({postId, userAvatar, setPostsCount, postAuthor}) => {
     if (!post?.text) return null;
 
     return (
-        <Box display={{md: "flex", base: "block"}} gap={3} mb={4} my={5} width={"full"}>
+        <Box display={{md: "flex", base: "block"}} gap={3} mb={"70px"} width={"full"}>
             <Flex
                 display={{md: "flex", base: "none"}}
                 position="relative"
